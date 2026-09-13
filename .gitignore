@@ -1,0 +1,14 @@
+# NOTE: .agent-logs/ is intentionally NOT ignored. The agent capture logs are
+# part of the submission and ship with this repo. Do not add them here.
+
+.DS_Store
+node_modules/
+dist/
+build/
+.env
+.env.local
+*.log
+# ...but the capture hook's own error log is evidence, so it ships if it exists.
+!.agent-logs/.capture-errors.log
+__pycache__/
+*.pyc
