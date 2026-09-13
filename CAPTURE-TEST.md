@@ -76,6 +76,7 @@ Log directory: **`.agent-logs/`** (committed; **not** in `.gitignore`).
 | 2 | `88ef31aa` | [`.agent-logs/2026-09-13_23-36-18_88ef31aa-b6ce-4e2d-9493-068a3181da3f.md`](.agent-logs/2026-09-13_23-36-18_88ef31aa-b6ce-4e2d-9493-068a3181da3f.md) | **works in a second, independent session** |
 | 3 | `d0436d6f` | [`.agent-logs/2026-09-13_23-39-15_d0436d6f-eba8-46b1-b82d-8fb782717125.md`](.agent-logs/2026-09-13_23-39-15_d0436d6f-eba8-46b1-b82d-8fb782717125.md) | race fix (§4); also multi-turn, `total_exchanges: 2` |
 | 4 | `cfe939e1` | [`.agent-logs/2026-09-13_23-39-24_cfe939e1-71dc-40bc-86af-26e1df7a3bcc.md`](.agent-logs/2026-09-13_23-39-24_cfe939e1-71dc-40bc-86af-26e1df7a3bcc.md) | fires from the parent dir too (§5) |
+| 5 | `d84add65` | [`.agent-logs/2026-09-13_23-41-13_d84add65-bedf-4ccc-b492-b8e4f0cf2607.md`](.agent-logs/2026-09-13_23-41-13_d84add65-bedf-4ccc-b492-b8e4f0cf2607.md) | re-verified **after** the first commit, against the exact committed config |
 
 Sessions 1 and 2 are the two required canaries: separate session ids, separate files,
 neither one the session that installed the hook.
