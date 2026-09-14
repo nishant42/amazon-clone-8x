@@ -50,14 +50,19 @@ app/
   layout.tsx                  renders SiteHeader
   page.tsx                    product grid
   search/page.tsx             ?q= &sort= &page=        (not built yet)
-  product/[slug]/page.tsx     product detail           (not built yet)
+  product/[slug]/page.tsx     product detail
   cart/page.tsx                                        (not built yet)
   api/health/route.ts
 components/ui/                presentational, props only
   SiteHeader.tsx  ProductCard.tsx  Stars.tsx
+components/product/           client island: gallery + buy box
+components/cart/              client island
 lib/
   data/products.ts            seed catalogue + async access seam
+  basket.ts                   cookie parse + server-side price resolution
+  basket-actions.ts           "use server" mutations
   money.ts                    minor-unit formatting
+  images.ts                   derived gallery images
 .claude/  .agent-logs/        capture hook + logs (ship with the repo)
 ```
 
@@ -72,11 +77,16 @@ later means migrating fixture data *and* touching every display and arithmetic s
 *Check:* no price ever hits `parseFloat`, and formatting happens only in `lib/money.ts`.
 `grep -rn "toFixed\|parseFloat" app components lib 2>/dev/null | grep -i price` stays empty.
 
-**2. Server Components by default; the cart is the only client island.**
-Product and search pages render on the server and ship no JS for data. Reversing means
-rewriting every component's data flow, not just adding a directive.
+**2. Server Components by default; client islands are named and contained.**
+Pages render on the server and ship no JS for *data*. Interaction islands are confined to
+`components/cart/` and `components/product/` (gallery swap, colour/size/quantity). Reversing
+means rewriting every component's data flow, not just adding a directive.
+*Widened once, deliberately:* this originally said the cart was the only island. Thumbnail
+swapping and variant pickers are genuinely interactive, so `components/product/` was added
+rather than faking interactivity server-side.
 *Check:* `grep -rln '^"use client"' app components 2>/dev/null` lists only files under
-`components/cart/`. (Anchored to line start: unanchored, it matches the string in a comment.)
+`components/cart/` or `components/product/`. (Anchored to line start: unanchored it matches
+the string inside a comment.)
 
 **3. All data access goes through async functions in `lib/data/`.**
 They hold the seed catalogue today and can read a database or API later with no call-site changes —
