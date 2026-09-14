@@ -74,7 +74,12 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
       basketCount={itemCount}
       blocking={
         blocked
-          ? { label: blocked.chip.label, href: blocked.chip.href, recovered: blocked.recovered }
+          ? {
+              label: blocked.chip.label,
+              href: blocked.chip.href,
+              recovered: blocked.recovered,
+              facet: blocked.chip.facet,
+            }
           : undefined
       }
       correction={

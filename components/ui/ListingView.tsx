@@ -6,6 +6,7 @@ import { FilterSidebar } from "@/components/ui/FilterSidebar";
 import { MIN_COMPARE } from "@/lib/compare-core";
 import { ProductCard } from "@/components/ui/ProductCard";
 import type { Product } from "@/lib/data/products";
+import { CATEGORIES } from "@/lib/data/products";
 import { activeChips, type ListingQuery, type facetCounts } from "@/lib/listing-core";
 
 export function ListingView({
@@ -21,7 +22,7 @@ export function ListingView({
   results: Product[];
   counts: ReturnType<typeof facetCounts>;
   /** When nothing matches: the one filter whose removal brings back the most results. */
-  blocking?: { label: string; href: string; recovered: number };
+  blocking?: { label: string; href: string; recovered: number; facet: string };
   /** Enables drag-to-basket (an enhancement; the Add to Basket button is unaffected). */
   basketCount?: number;
   /** Set when a typo correction produced (or could produce) the results. */
@@ -38,6 +39,7 @@ export function ListingView({
 }) {
   const barVisible = (compareSelected?.length ?? 0) >= MIN_COMPARE;
   const chips = activeChips(query);
+  const otherFilters = chips.filter((chip) => chip.facet !== "text").length;
 
   return (
     <main className={`min-h-screen bg-[#E3E6E6] ${barVisible ? "pb-24" : ""}`}>
@@ -137,8 +139,65 @@ export function ListingView({
             </DragBasketLayer>
           ) : (
             <div className="mt-4 rounded-[4px] bg-white px-6 py-12 text-center">
-              <h1 className="text-[21px] font-bold text-amazon-text">No products match these filters</h1>
-              {blocking ? (
+              <h1 className="text-[21px] font-bold text-amazon-text">
+                {query.q ? (
+                  <>No results for &ldquo;{query.q}&rdquo;</>
+                ) : (
+                  "No products match these filters"
+                )}
+              </h1>
+              {/* A search term is not a filter chip, so it does not get the
+                  "remove this filter" treatment. Three cases: the search alone
+                  found nothing; the search collides with the filters; or a
+                  filter is to blame. */}
+              {query.q && otherFilters === 0 ? (
+                <>
+                  <p className="mx-auto mt-2 max-w-lg text-[14px] text-[#565959]">
+                    Check the spelling, try a more general word, or browse a department.
+                  </p>
+                  <div className="mt-4 flex flex-wrap justify-center gap-2">
+                    {CATEGORIES.map((c) => (
+                      <Link
+                        key={c}
+                        href={`/search?category=${encodeURIComponent(c)}`}
+                        className="rounded-[4px] border border-[#d5d9d9] px-3 py-1 text-[13px] text-amazon-link hover:border-amazon-link"
+                      >
+                        {c}
+                      </Link>
+                    ))}
+                  </div>
+                  <p className="mt-6">
+                    <Link
+                      href="/search"
+                      className="inline-block rounded-[20px] bg-amazon-orange px-6 py-2 text-[14px] font-medium text-amazon-text hover:brightness-95"
+                    >
+                      Browse all products
+                    </Link>
+                  </p>
+                </>
+              ) : blocking && blocking.facet === "text" ? (
+                <>
+                  <p className="mx-auto mt-2 max-w-lg text-[14px] text-amazon-text">
+                    Nothing matches &ldquo;{query.q}&rdquo; inside these filters. Without the
+                    search term there {blocking.recovered === 1 ? "is" : "are"}{" "}
+                    {blocking.recovered} {blocking.recovered === 1 ? "result" : "results"}.
+                  </p>
+                  <p className="mt-6 flex flex-wrap justify-center gap-3">
+                    <Link
+                      href={blocking.href}
+                      className="inline-block rounded-[20px] bg-amazon-orange px-6 py-2 text-[14px] font-medium text-amazon-text hover:brightness-95"
+                    >
+                      Keep the filters, clear the search
+                    </Link>
+                    <Link
+                      href="/search"
+                      className="inline-block rounded-[20px] border border-[#d5d9d9] px-6 py-2 text-[14px] text-amazon-text hover:border-amazon-link"
+                    >
+                      Clear everything
+                    </Link>
+                  </p>
+                </>
+              ) : blocking ? (
                 <>
                   <p className="mx-auto mt-2 max-w-lg text-[14px] text-amazon-text">
                     <span className="font-bold">{blocking.label}</span> is the filter ruling everything

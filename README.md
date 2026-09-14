@@ -50,7 +50,8 @@ _Filled in as features land. Kept factual — nothing listed here unless it runs
   Pointer Events so it works with mouse and pen, fine-pointer and >= md only, 6px threshold so
   clicks still work, no animation under `prefers-reduced-motion`. The Add to Basket button is
   untouched and remains the primary path; if the drag layer fails it fails invisibly.
-- **Typo tolerance** — "bluetoth" and "hedphones" find products. Fuzzy matching (Levenshtein,
+- **Typo tolerance** — "bluetoth", "hedphones" and "bluetoz" find products (one edit for 4-6
+  letter words, two for 7+, plus matching against the start of a longer word). Fuzzy matching (Levenshtein,
   no dependency) only runs when the exact pass finds almost nothing, and its hits rank below
   exact ones. The page says "Showing results for bluetooth" and links to the literal search
   rather than silently rewriting the query. ~0.8ms per query, no index or cache.

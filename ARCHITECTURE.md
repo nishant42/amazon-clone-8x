@@ -214,16 +214,26 @@ The strict pass runs first and always ranks above anything fuzzy. Only when it r
 than `FUZZY_MIN_STRICT` (3) results does `queryProducts` correct the query - one replacement per
 word, the closest vocabulary word by Levenshtein distance (ties to the more common word), never
 every candidate inside the threshold - and append those matches after the exact ones, ranked by
-total edit distance then rating. Thresholds scale with length: under 3 letters no correction,
-3-5 one edit, 6+ two. The page always says what it did ("Showing results for **bluetooth**")
+total edit distance then rating. Thresholds scale with length: under 4 letters no correction,
+4-6 one edit, 7+ two. A token of 4+ letters that matches no whole word is also compared against
+the START of a longer word, and against that word minus its first letter, which catches a word
+that is both truncated and mistyped ("bluetoz" -> bluetooth). Whole-word matches always outrank
+prefix ones, which carry a +0.5 ranking penalty. The page always says what it did ("Showing results for **bluetooth**")
 and links to `exact=1`, which suggests the correction without applying it. Silently rewriting
 someone's query is worse than the typo.
-*Bounds:* no dependency, no index, no cache - the vocabulary (450 words for 120 products) is
+*Empty state:* a search term is not a filter chip, so it never gets "remove this filter"
+wording. With no other filters the page says "No results for X" with spelling advice and
+department links; with filters where the term is what kills the result set it offers "keep the
+filters, clear the search"; only a facet filter gets the blame-and-remove treatment.
+*Bounds:* one edit at 6 letters means a two-edit typo like "kettel" -> "kettle" is no longer
+corrected - the cost of the tighter short end. No dependency, no index, no cache - the vocabulary (450 words for 120 products) is
 rebuilt per query at ~0.8ms, and that only holds at this catalogue size. Plain Levenshtein
 counts a swapped pair as two edits, so "hoodei" corrects to "hooded" (1) rather than "hoodie"
 (2); Damerau-Levenshtein would fix that and is the obvious upgrade if transposed typos matter.
 Corrections come from the catalogue's own words, so a term the catalogue never uses stays
-uncorrected - "iphne" finds nothing here because there are no iPhones in the seed data.
+uncorrected - "iphne" and "phope" find nothing here because there are no iPhones in the seed
+data, and the only vocabulary word containing "phone" is "headphones", where "phone" is not the
+start of the word.
 *Check:* `grep -rln "fuzzyMatches" lib app | grep -v fuzzy-core` lists only `lib/data/search.ts`
 - one place decides when fuzzy is allowed to run.
 
