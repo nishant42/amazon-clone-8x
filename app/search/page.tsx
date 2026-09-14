@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { ListingView } from "@/components/ui/ListingView";
 import { cleanSentence } from "@/lib/ai-search-core";
 import { interpretSearch } from "@/lib/ai-search";
+import { resolveBasket } from "@/lib/basket";
 import { validCompareIds } from "@/lib/compare-core";
 import { blockingChip } from "@/lib/listing-core";
 import { getProducts, type Product } from "@/lib/data/products";
@@ -58,6 +59,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   }
 
   const { results, counts, correction } = await queryProducts(query);
+  const { itemCount } = await resolveBasket();
   // Only computed when there is nothing to show, to name the filter to drop.
   const blocked = results.length === 0 ? blockingChip(catalogue, query) : undefined;
   const compareSelected = query.compare
@@ -69,6 +71,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
       results={results}
       counts={counts}
       compareSelected={compareSelected}
+      basketCount={itemCount}
       blocking={
         blocked
           ? { label: blocked.chip.label, href: blocked.chip.href, recovered: blocked.recovered }

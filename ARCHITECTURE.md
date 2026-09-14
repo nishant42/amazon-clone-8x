@@ -227,6 +227,21 @@ uncorrected - "iphne" finds nothing here because there are no iPhones in the see
 *Check:* `grep -rln "fuzzyMatches" lib app | grep -v fuzzy-core` lists only `lib/data/search.ts`
 - one place decides when fuzzy is allowed to run.
 
+**9. Drag-to-basket is an enhancement, never a path.**
+The Add to Basket button is the product path and is untouched. Dragging is layered on top by
+one island, `components/cart/DragBasketLayer.tsx`, which wraps the results grid and uses event
+delegation - `ProductCard` has no idea it exists. It calls `addProductToBasket`, a second server
+action added beside `addToBasket` rather than changing it: the button redirects to the basket,
+which is right for a product page and wrong for a drop.
+*Bounds:* Pointer Events, not HTML5 drag-and-drop, because HTML5 drag events never fire on
+touch. Enabled only on a fine pointer at >= md (`useSyncExternalStore` over `matchMedia`);
+below that the target is not rendered at all. A drag needs 6px of movement before it starts, so
+a click still opens the product, and the click that follows a drag is swallowed.
+`prefers-reduced-motion` removes every transition. Every handler is wrapped so a failure leaves
+ordinary links behind. A dropped card adds the default line with no variant, like any quick-add.
+*Check:* `grep -rn "addProductToBasket" app components lib | grep -v basket-actions.ts` lists
+only the drag island - nothing else uses the quiet add, and the button path keeps `addToBasket`.
+
 ## Caught before shipping
 
 **The order cookie size cap measured the wrong thing.** The first version of `addOrder` capped
@@ -240,6 +255,11 @@ measuring the encoded size in a test before the checkout commit, not by a user.
 and `orderFitsInCookie()` is checked before any write.
 *Check:* `grep -c "JSON.stringify" lib/orders-core.ts` is `1` — the only call is inside
 `encodedSize()`. A second call is a raw-size comparison creeping back in.
+
+**The drop target covered the Compare button.** Both are fixed to the bottom of the viewport;
+the target sat at `bottom-6 right-6` with a higher z-index and swallowed clicks on Compare in
+the selection bar. Caught by the compare suite, not by looking at it. The target now lifts to
+`bottom-28` whenever the compare bar is visible.
 
 **The AI search fallback returned nothing for the demo sentence.** The fallback keeps only words
 that appear somewhere in the catalogue, then requires every word to match. For "cheap running

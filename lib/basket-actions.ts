@@ -55,6 +55,17 @@ export async function addToBasket(formData: FormData) {
   redirect("/cart");
 }
 
+/**
+ * Quick add used by drag-to-basket. Deliberately separate from addToBasket:
+ * that one redirects to the basket, which is right for a product page and wrong
+ * for a drop, and it must keep behaving exactly as it does. No variants - a
+ * dropped card adds the default line, like any quick-add.
+ */
+export async function addProductToBasket(productId: string) {
+  if (!productId || typeof productId !== "string") return;
+  await save(applyAdd(await load(), { productId, qty: 1 }));
+}
+
 export async function setLineQty(formData: FormData) {
   const key = String(formData.get("key") ?? "");
   if (!key) return;

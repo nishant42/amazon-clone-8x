@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DragBasketLayer } from "@/components/cart/DragBasketLayer";
 import { CompareBar } from "@/components/ui/CompareBar";
 import { CompareToggle } from "@/components/ui/CompareToggle";
 import { FilterSidebar } from "@/components/ui/FilterSidebar";
@@ -14,12 +15,15 @@ export function ListingView({
   compareSelected,
   blocking,
   correction,
+  basketCount,
 }: {
   query: ListingQuery;
   results: Product[];
   counts: ReturnType<typeof facetCounts>;
   /** When nothing matches: the one filter whose removal brings back the most results. */
   blocking?: { label: string; href: string; recovered: number };
+  /** Enables drag-to-basket (an enhancement; the Add to Basket button is unaffected). */
+  basketCount?: number;
   /** Set when a typo correction produced (or could produce) the results. */
   correction?: {
     original: string;
@@ -113,19 +117,24 @@ export function ListingView({
           </div>
 
           {results.length > 0 ? (
-            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-              {results.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  footer={
-                    compareSelected ? (
-                      <CompareToggle query={query} id={product.id} title={product.title} />
-                    ) : undefined
-                  }
-                />
-              ))}
-            </div>
+            <DragBasketLayer basketCount={basketCount ?? 0} raised={barVisible}>
+              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                {results.map((product) => (
+                  // display:contents keeps the grid layout identical; the
+                  // attribute is what the drag layer looks for.
+                  <div key={product.id} className="contents" data-drag-product-id={product.id}>
+                    <ProductCard
+                      product={product}
+                      footer={
+                        compareSelected ? (
+                          <CompareToggle query={query} id={product.id} title={product.title} />
+                        ) : undefined
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+            </DragBasketLayer>
           ) : (
             <div className="mt-4 rounded-[4px] bg-white px-6 py-12 text-center">
               <h1 className="text-[21px] font-bold text-amazon-text">No products match these filters</h1>

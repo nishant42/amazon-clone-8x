@@ -46,6 +46,10 @@ _Filled in as features land. Kept factual — nothing listed here unless it runs
   a time, and when nothing matches the page names the filter to blame and offers to drop it.
   Results update in place (median 84ms, no page reload); state is entirely in the URL, so the
   back button and shared links work, and it still works with JavaScript disabled.
+- **Drag to basket** (enhancement) — drag a product card onto the basket target in the corner.
+  Pointer Events so it works with mouse and pen, fine-pointer and >= md only, 6px threshold so
+  clicks still work, no animation under `prefers-reduced-motion`. The Add to Basket button is
+  untouched and remains the primary path; if the drag layer fails it fails invisibly.
 - **Typo tolerance** — "bluetoth" and "hedphones" find products. Fuzzy matching (Levenshtein,
   no dependency) only runs when the exact pass finds almost nothing, and its hits rank below
   exact ones. The page says "Showing results for bluetooth" and links to the literal search
