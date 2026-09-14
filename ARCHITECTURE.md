@@ -49,9 +49,11 @@ on every render, so a stale or tampered cookie can never set a price.
 app/
   layout.tsx                  renders SiteHeader
   page.tsx                    product grid
-  search/page.tsx             ?q= &sort= &page=        (not built yet)
+  search/page.tsx             ?q= &category=
   product/[slug]/page.tsx     product detail
-  cart/page.tsx                                        (not built yet)
+  cart/page.tsx               basket
+  orders/page.tsx             placeholder empty state
+  info/[topic]/page.tsx       placeholder behind the secondary nav
   api/health/route.ts
 components/ui/                presentational, props only
   SiteHeader.tsx  ProductCard.tsx  Stars.tsx
@@ -59,7 +61,9 @@ components/product/           client island: gallery + buy box
 components/cart/              client island
 lib/
   data/products.ts            seed catalogue + async access seam
-  basket.ts                   cookie parse + server-side price resolution
+  data/search.ts              tokenised, punctuation-normalised matching
+  basket-core.ts              pure basket rules, no Next imports (testable)
+  basket.ts                   cookie read + server-side price resolution
   basket-actions.ts           "use server" mutations
   money.ts                    minor-unit formatting
   images.ts                   derived gallery images

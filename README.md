@@ -37,6 +37,16 @@ _Filled in as features land. Kept factual — nothing listed here unless it runs
   Tailwind config is visible immediately rather than at feature time.
 - **Health endpoint** (`app/api/health/route.ts`) returning `{ "status": "ok" }`, forced
   dynamic so it reflects the running app rather than a build-time snapshot.
+- **Product detail** (`/product/[slug]`) — gallery with thumbnail swap, colour/size
+  pickers that drive the basket line, quantity, and an out-of-stock state that disables
+  the button rather than hiding it.
+- **Search** (`/search?q=`) — matches title, brand, category and subcategory. Tokenised
+  and punctuation-normalised, so `levis` finds `Levi's`. Empty results get a real state.
+- **Basket** (`/cart`) — quantity and remove, subtotal computed server-side from prices
+  re-resolved out of the catalogue. Persists in a versioned `httpOnly` cookie that stores
+  only ids, quantities and variants — never a price.
+- **Placeholders** (`/orders`, `/info/*`) — so every header link lands somewhere real.
+  All 136 internal links on the site return 200.
 - **Agent capture.** Every prompt and final response is logged automatically to
   `.agent-logs/` via Claude Code hooks — see [CAPTURE-TEST.md](CAPTURE-TEST.md).
 
@@ -46,9 +56,12 @@ _Filled in as features land. Kept factual — nothing listed here unless it runs
 
 _Things that are absent on purpose, not by oversight. Reasons matter more than the list._
 
-- **Features, for now.** Deployment was proven before any feature existed, so that a
-  broken deploy could never be confused with a broken feature.
-- TBD — add each omission with its reason as the build progresses.
+- **Checkout, payments and accounts.** The basket is real; nothing beyond it is. `/orders`
+  says so on the page rather than pretending.
+- **A filter engine.** The data is shaped for it — every filterable field is a flat
+  top-level scalar — but sorting and faceting are not built.
+- **Persistence beyond a cookie.** Deliberate: the basket survives refresh on one device
+  and nothing more.
 
 ---
 

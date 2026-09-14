@@ -14,12 +14,13 @@ import Link from "next/link";
 const hoverBox =
   "rounded-[2px] border border-transparent p-1.5 hover:border-white transition-colors";
 
-const navLinks = [
-  "Today's Deals",
-  "Customer Service",
-  "Registry",
-  "Gift Cards",
-  "Sell",
+// Every entry points at a real page. See app/info/[topic]/page.tsx.
+const navLinks: { label: string; href: string }[] = [
+  { label: "Today's Deals", href: "/info/todays-deals" },
+  { label: "Customer Service", href: "/info/customer-service" },
+  { label: "Registry", href: "/info/registry" },
+  { label: "Gift Cards", href: "/info/gift-cards" },
+  { label: "Sell", href: "/info/sell" },
 ];
 
 function PinIcon() {
@@ -159,14 +160,14 @@ export function SiteHeader({ basketCount = 0 }: { basketCount?: number }) {
       {/* ---- second bar ---- */}
       <div className="bg-amazon-light">
         <div className="mx-auto flex max-w-[1500px] items-center gap-1 overflow-x-auto whitespace-nowrap px-2 py-1 text-[14px] sm:px-3">
-          <button type="button" className={`flex items-center gap-1 font-bold ${hoverBox}`}>
+          <Link href="/search" className={`flex items-center gap-1 font-bold ${hoverBox}`}>
             <MenuIcon />
             All
-          </button>
+          </Link>
           {navLinks.map((link) => (
-            <a key={link} href="#" className={hoverBox}>
-              {link}
-            </a>
+            <Link key={link.href} href={link.href} className={hoverBox}>
+              {link.label}
+            </Link>
           ))}
         </div>
       </div>
