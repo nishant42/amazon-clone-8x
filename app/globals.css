@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* The storefront is a light-only surface, matching Amazon's own UI. The
+   scaffold's prefers-color-scheme inversion was removed so the theme tokens
+   render the same for every visitor. */
+body {
+  color: #0f1111; /* amazon-text */
+  background: #ffffff;
+}

@@ -181,7 +181,13 @@ def session_log_path(session_id):
 
 
 def split_document(text):
-    """Split an existing log into (frontmatter_dict, ordered_keys, body)."""
+    """Split an existing log into (frontmatter_dict, ordered_keys, body).
+
+    Leading blank lines are tolerated. An editor or formatter touching a log
+    file can prepend one, and a strict startswith() check would then treat the
+    whole file as bodyless - observed in practice on a committed log.
+    """
+    text = text.lstrip("\n")
     if not text.startswith("---\n"):
         return {}, [], text
     end = text.find("\n---\n", 4)
@@ -259,13 +265,19 @@ def append_entry(session_id, kind, text, model, timestamp):
     """Append one entry, refresh the frontmatter counters, write atomically."""
     path = session_log_path(session_id)
 
+    degraded = False
     if os.path.exists(path):
         with open(path, "r") as handle:
             existing = handle.read()
         front, order, body = split_document(existing)
         if not front:
-            front, order, body = new_document(session_id, timestamp, model)
-            body = body + existing
+            # Frontmatter unreadable. Append to the file as it stands rather
+            # than synthesising a second frontmatter block, which would
+            # duplicate the entire document. Capturing the turn matters more
+            # than keeping the counters accurate.
+            degraded = True
+            front, order, body = {}, [], existing
+            log_error("unparseable frontmatter in %s; appended without counters" % path)
     else:
         front, order, body = new_document(session_id, timestamp, model)
 
@@ -282,18 +294,22 @@ def append_entry(session_id, kind, text, model, timestamp):
 
     body = body + format_entry(kind, num, session_id, timestamp, model, text)
 
-    front["total_exchanges"] = str(len(prompt_nums) + (1 if kind == "PROMPT" else 0))
-    front["last_prompt_time"] = timestamp
-    if model and model not in (MODEL_UNKNOWN, MODEL_UNKNOWN_AT_PROMPT):
-        front["model"] = model
-    for key in ("session_id", "date", "author", "model", "tool", "project",
-                "total_exchanges", "first_prompt_time", "last_prompt_time"):
-        if key not in order:
-            order.append(key)
+    if degraded:
+        rendered = body
+    else:
+        front["total_exchanges"] = str(len(prompt_nums) + (1 if kind == "PROMPT" else 0))
+        front["last_prompt_time"] = timestamp
+        if model and model not in (MODEL_UNKNOWN, MODEL_UNKNOWN_AT_PROMPT):
+            front["model"] = model
+        for key in ("session_id", "date", "author", "model", "tool", "project",
+                    "total_exchanges", "first_prompt_time", "last_prompt_time"):
+            if key not in order:
+                order.append(key)
+        rendered = render_document(front, order, body)
 
     tmp = path + ".tmp"
     with open(tmp, "w") as handle:
-        handle.write(render_document(front, order, body))
+        handle.write(rendered)
     os.rename(tmp, path)
     return path
 

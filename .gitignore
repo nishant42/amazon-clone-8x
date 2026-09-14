@@ -1,14 +1,49 @@
 # NOTE: .agent-logs/ is intentionally NOT ignored. The agent capture logs are
 # part of the submission and ship with this repo. Do not add them here.
+# Verified with `git check-ignore` after the Next.js scaffold was merged in.
 
-.DS_Store
+# dependencies
+/node_modules
 node_modules/
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
 dist/
-build/
-.env
-.env.local
+
+# misc
+.DS_Store
+*.pem
+
+# debug
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 # ...but the capture hook's own error log is evidence, so it ships if it exists.
 !.agent-logs/.capture-errors.log
+
+# local env files
+.env
+.env.local
+.env*.local
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# python (capture hook)
 __pycache__/
 *.pyc

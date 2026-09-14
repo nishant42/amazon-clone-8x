@@ -211,6 +211,32 @@ have been a `.gitignore` rule mentioning `.agent-logs` — which invites exactly
 misreading the brief warns about. Moved the lock to the system temp dir instead, keyed by a
 hash of the repo path. `.agent-logs/` now contains only logs.
 
+**6. A committed log file came back modified, with a blank line prepended before the `---`.**
+Something outside the hook (an editor or formatter — the file had just been opened in the IDE)
+added a leading newline to canary 1. Harmless-looking, but it exposed a genuine latent bug:
+`split_document()` tested `text.startswith("---\n")`, so a single leading newline made the
+frontmatter unparseable, and the fallback path then wrote a *fresh* frontmatter block
+followed by the entire old file — duplicating every existing entry on the next append.
+
+Fixed twice over: `split_document()` now tolerates leading blank lines, and the fallback no
+longer synthesises a second frontmatter block — it appends to the file as it stands and notes
+it in `.capture-errors.log`, so a turn is never lost and content is never duplicated.
+Reproduced the exact corruption against a scratch copy and confirmed recovery: one frontmatter
+block, no duplicated entries, counters correct. Canary 1 was restored to its committed bytes
+with `git checkout` — that reverts an external tool's whitespace edit, not log content.
+
+**7. `!` bash-mode input is a genuine blind spot.**
+Visible in [session `8fbe17b6`](.agent-logs/2026-09-13_23-47-36_8fbe17b6-85f4-4093-ab13-de6022d9ad8e.md):
+it has two `RESPONSE num=1` entries and no `PROMPT num=2`. That session asked for a public
+GitHub repo, was stopped by the permission classifier, and the user then approved by running
+`! gh repo create ...` directly. A `!`-prefixed bash command is not a prompt, so
+`UserPromptSubmit` never fires, while the follow-up turn still ends in a `Stop` — producing a
+response with no matching prompt, reusing the previous number.
+
+I have left this as-is rather than inventing a synthetic prompt entry for it. A reader should
+know that **`!` commands do not appear in these logs**, and that a repeated `num=` is the
+signature of one having been used.
+
 ### 4.4 — The one known limitation, stated plainly
 
 **The first `PROMPT` entry of every session records `model: unknown-at-prompt-time`.**
@@ -230,12 +256,24 @@ the actual requirement.
 
 ## 5. Notes a reviewer should know
 
-**This setup session itself is not in `.agent-logs/`.** The session that installed the hooks
-(`0015fd4e`) started in `Documents/8x`, the parent of this repo, before any hook config
-existed — and Claude Code snapshots hook config at session start. So the assignment brief and
-this entire setup conversation are **not** captured. Capture begins with canary 1. I am
-flagging this rather than reconstructing those turns by hand, since a hand-written log entry
-would be a fabrication.
+**The setup session is only partly captured — and my first version of this file got that
+wrong.** The session that installed the hooks (`0015fd4e`) started in `Documents/8x`, the
+parent of this repo, before any hook config existed. I originally wrote here that it would
+*never* be captured, because Claude Code snapshots hook config at session start. That turned
+out to be false: once the working directory moved into the repo, the hooks were picked up
+mid-session, and capture for `0015fd4e` begins at `23:41:33` — see
+[`.agent-logs/2026-09-13_23-41-33_0015fd4e-....md`](.agent-logs/2026-09-13_23-41-33_0015fd4e-bf9f-4d7d-8340-b916869a4931.md).
+
+So the gap is real but narrower than stated: **the assignment brief and the hook-building
+turns are absent; everything from the scaffold onward is captured.** I have not reconstructed
+the missing turns by hand — a hand-written entry would be a fabrication. Correcting the claim
+here rather than silently is the point.
+
+**A model switch really is visible, and not hypothetically.** Session
+[`8fbe17b6`](.agent-logs/2026-09-13_23-47-36_8fbe17b6-85f4-4093-ab13-de6022d9ad8e.md) ran on
+`claude-opus-4-8` while the main build session ran on `claude-opus-5`. Both were captured to
+the same `.agent-logs/` directory, each entry carrying its own model id, with no configuration
+change needed. That is the `model:` field doing exactly the job the brief asks of it.
 
 **That gap is also why the parent-directory safety net exists.** A session opened at
 `Documents/8x` instead of `Documents/8x/amazon-clone-8x` loads no project hooks and goes
