@@ -1,5 +1,8 @@
 import Link from "next/link";
+import { CompareBar } from "@/components/ui/CompareBar";
+import { CompareToggle } from "@/components/ui/CompareToggle";
 import { FilterSidebar } from "@/components/ui/FilterSidebar";
+import { MIN_COMPARE } from "@/lib/compare-core";
 import { ProductCard } from "@/components/ui/ProductCard";
 import type { Product } from "@/lib/data/products";
 import { activeChips, type ListingQuery, type facetCounts } from "@/lib/listing-core";
@@ -8,15 +11,19 @@ export function ListingView({
   query,
   results,
   counts,
+  compareSelected,
 }: {
   query: ListingQuery;
   results: Product[];
   counts: ReturnType<typeof facetCounts>;
+  /** Pass to enable comparing (on /search). Omitted on home, which is unchanged. */
+  compareSelected?: Product[];
 }) {
+  const barVisible = (compareSelected?.length ?? 0) >= MIN_COMPARE;
   const chips = activeChips(query);
 
   return (
-    <main className="min-h-screen bg-[#E3E6E6]">
+    <main className={`min-h-screen bg-[#E3E6E6] ${barVisible ? "pb-24" : ""}`}>
       <div className="mx-auto grid max-w-[1500px] gap-4 px-3 py-4 lg:grid-cols-[220px_minmax(0,1fr)]">
         <aside className="hidden h-fit rounded-[4px] bg-white p-4 lg:block">
           <FilterSidebar query={query} counts={counts} />
@@ -73,7 +80,15 @@ export function ListingView({
           {results.length > 0 ? (
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
               {results.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  footer={
+                    compareSelected ? (
+                      <CompareToggle query={query} id={product.id} title={product.title} />
+                    ) : undefined
+                  }
+                />
               ))}
             </div>
           ) : (
@@ -94,6 +109,7 @@ export function ListingView({
           )}
         </div>
       </div>
+      {compareSelected ? <CompareBar query={query} selected={compareSelected} /> : null}
     </main>
   );
 }

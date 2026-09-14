@@ -20,6 +20,8 @@ export type ListingQuery = {
   inStock: boolean;
   /** Display only: the sentence an AI search was interpreted from. Never filters. */
   from?: string;
+  /** Product ids picked for comparison. Not a filter: never narrows results. */
+  compare?: string[];
 };
 
 export type RawParams = Record<string, string | string[] | undefined>;
@@ -51,6 +53,21 @@ export function poundsToMinor(value: string | undefined): number | undefined {
 /** Pence -> the shortest pounds string for a URL: 5000 -> "50", 4999 -> "49.99". */
 export function minorToPoundsParam(minor: number): string {
   return minor % 100 === 0 ? String(minor / 100) : (minor / 100).toFixed(2);
+}
+
+/** "p003,p010" -> ["p003", "p010"], trimmed and de-duplicated. Catalogue validation is the page's job. */
+export function parseCompareParam(value: string | undefined): string[] {
+  if (!value) return [];
+  return [...new Set(value.split(",").map((id) => id.trim()).filter(Boolean))];
+}
+
+/**
+ * URLSearchParams encodes "," as %2C. Commas are legal in a query string, and
+ * "?compare=p003,p010" is what people read and share, so links use the literal
+ * form. Server-side, both forms decode to the same value.
+ */
+export function prettyQueryString(sp: URLSearchParams): string {
+  return sp.toString().replace(/%2C/gi, ",");
 }
 
 export function findCategory(value: string | undefined): Category | undefined {
@@ -89,6 +106,7 @@ export function parseListingParams(params: RawParams): ListingQuery {
     maxPriceMinor,
     inStock: first(params.inStock) === "1",
     from: first(params.from),
+    compare: parseCompareParam(first(params.compare)),
   };
 }
 
@@ -101,6 +119,7 @@ export function listingSearchParams(query: ListingQuery): URLSearchParams {
   if (query.minPriceMinor !== undefined) sp.set("minPrice", minorToPoundsParam(query.minPriceMinor));
   if (query.maxPriceMinor !== undefined) sp.set("maxPrice", minorToPoundsParam(query.maxPriceMinor));
   if (query.inStock) sp.set("inStock", "1");
+  if (query.compare?.length) sp.set("compare", query.compare.join(","));
   if (query.from) sp.set("from", query.from);
   return sp;
 }
@@ -111,7 +130,7 @@ export function listingHref(query: ListingQuery, patch: Partial<ListingQuery> = 
   if ("category" in patch && patch.category !== query.category && !("sub" in patch)) {
     next.sub = undefined;
   }
-  const qs = listingSearchParams(next).toString();
+  const qs = prettyQueryString(listingSearchParams(next));
   return qs ? `/search?${qs}` : "/search";
 }
 

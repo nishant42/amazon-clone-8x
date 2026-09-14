@@ -60,6 +60,7 @@ app/
   layout.tsx                  renders SiteHeader
   page.tsx                    unfiltered listing (same view as /search)
   search/page.tsx             filtered listing; redirects to canonical URL
+  search/compare/page.tsx     side-by-side comparison of ?compare= products
   product/[slug]/page.tsx     product detail
   cart/page.tsx               basket
   checkout/page.tsx           address, delivery, mock payment
@@ -69,6 +70,7 @@ app/
 components/ui/                presentational, props only
   SiteHeader.tsx  ProductCard.tsx  Stars.tsx
   ListingView.tsx  FilterSidebar.tsx   filters are links + one GET form, no JS
+  CompareToggle.tsx  CompareBar.tsx     compare selection is links, no JS
 components/product/           client island: gallery + buy box
 components/cart/              client island
 components/checkout/          client island: checkout form
@@ -76,6 +78,7 @@ lib/
   data/products.ts            seed catalogue + async access seam
   data/search.ts              async seam: queryProducts(query)
   listing-core.ts             pure: parse params, filter, facet counts, canonical URLs
+  compare-core.ts             pure: validate/cap selection, toggle links, multipack count
   ai-search-core.ts           pure: prompt, validate model output, text fallback
   ai-search.ts                server-only: the one module that calls the Anthropic API
   basket-core.ts              pure basket rules, no Next imports (testable)
@@ -123,7 +126,10 @@ component fetches. Every exported function in `lib/data/` returns a Promise.
 **4. Catalog state (query, sort, page, filters) lives in the URL, not React state.**
 Search results must be linkable, shareable, and server-renderable. Retrofitting URL state onto
 client state means rebuilding navigation and pagination.
-Filters are `q`, `category`, `sub`, `minPrice`, `maxPrice`, `inStock=1`. There is exactly one
+Filters are `q`, `category`, `sub`, `minPrice`, `maxPrice`, `inStock=1`. Comparison selection
+rides on the same query as `compare=id1,id2` (validated against the catalogue, de-duplicated,
+capped at 3) but is never a filter: it does not narrow results or produce a chip, and filter
+links carry it so a selection survives filtering. There is exactly one
 encoding: `parseListingParams` turns untrusted params into a valid query (unknown categories,
 a subcategory from another category and malformed prices are dropped), and `listingHref`
 serialises it with a fixed key order. `/search` redirects any non-canonical URL to that form,

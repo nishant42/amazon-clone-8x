@@ -21,6 +21,11 @@ export function splitGBP(minor: number): [string, string] {
   return [whole, pence];
 }
 
+/** Price of one item in a multipack, rounded to the nearest penny: 1499 for 5 -> 300 */
+export function perUnitMinor(priceMinor: number, count: number): number {
+  return Math.round(priceMinor / count);
+}
+
 /** Whole-number discount percentage, e.g. 6500 from 9199 -> 29 */
 export function discountPercent(priceMinor: number, wasPriceMinor: number): number {
   if (wasPriceMinor <= priceMinor) return 0;

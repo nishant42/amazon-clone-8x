@@ -4,7 +4,14 @@ import type { Product } from "@/lib/data/products";
 import { discountPercent, formatGBP, splitGBP } from "@/lib/money";
 import { Stars } from "./Stars";
 
-export function ProductCard({ product }: { product: Product }) {
+export function ProductCard({
+  product,
+  footer,
+}: {
+  product: Product;
+  /** Optional extra row at the bottom of the card (the compare checkbox on /search). */
+  footer?: React.ReactNode;
+}) {
   const [whole, pence] = splitGBP(product.priceMinor);
   const off = product.wasPriceMinor
     ? discountPercent(product.priceMinor, product.wasPriceMinor)
@@ -67,6 +74,7 @@ export function ProductCard({ product }: { product: Product }) {
           ? "Currently unavailable"
           : `Get it in ${product.deliveryDays} ${product.deliveryDays === 1 ? "day" : "days"}`}
       </p>
+      {footer ? <div className="mt-2 border-t border-[#e7e7e7] pt-2">{footer}</div> : null}
     </article>
   );
 }

@@ -47,6 +47,11 @@ _Filled in as features land. Kept factual — nothing listed here unless it runs
 - **Basket** (`/cart`) — quantity and remove, subtotal computed server-side from prices
   re-resolved out of the catalogue. Persists in a versioned `httpOnly` cookie that stores
   only ids, quantities and variants — never a price.
+- **Compare** (`/search`, `/search/compare`) — tick up to three results to get a bar with a
+  Compare button; the comparison view shows image, title, brand, price, price per unit for
+  multipacks, delivery, stock and variants side by side, with Add to Basket per column. The
+  selection lives in `?compare=id1,id2`, so it is server-rendered, shareable and works with the
+  back button and with JavaScript disabled.
 - **Natural-language search** (header box) — "cheap running shoes under £50" is sent to
   `claude-opus-5`, which returns only `{category, maxPrice, keywords, inStockOnly}`. That is
   validated against the real catalogue and mapped onto the same URL filters as the sidebar;

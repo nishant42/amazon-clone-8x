@@ -2,11 +2,14 @@ import { redirect } from "next/navigation";
 import { ListingView } from "@/components/ui/ListingView";
 import { cleanSentence } from "@/lib/ai-search-core";
 import { interpretSearch } from "@/lib/ai-search";
+import { validCompareIds } from "@/lib/compare-core";
+import { getProducts, type Product } from "@/lib/data/products";
 import { queryProducts } from "@/lib/data/search";
 import {
   listingHref,
   listingSearchParams,
   parseListingParams,
+  prettyQueryString,
   type RawParams,
 } from "@/lib/listing-core";
 
@@ -39,15 +42,25 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   }
 
   const query = parseListingParams(raw);
+  const catalogue = await getProducts();
+  // Unknown ids dropped, duplicates removed, capped at 3 - then canonicalised
+  // below with everything else, so ?compare=a,b,c,d redirects to the first 3.
+  query.compare = validCompareIds(query.compare, catalogue);
 
   // One URL per result set. "category=All", empty inputs, invalid values and
   // key order all redirect to the canonical form, so shared links stay clean
   // and two URLs never mean the same thing.
   const canonical = listingSearchParams(query).toString();
   if (rawQueryString(raw) !== canonical) {
-    redirect(canonical ? `/search?${canonical}` : "/search");
+    const pretty = prettyQueryString(listingSearchParams(query));
+    redirect(pretty ? `/search?${pretty}` : "/search");
   }
 
   const { results, counts } = await queryProducts(query);
-  return <ListingView query={query} results={results} counts={counts} />;
+  const compareSelected = query.compare
+    .map((id) => catalogue.find((p) => p.id === id))
+    .filter((p): p is Product => Boolean(p));
+  return (
+    <ListingView query={query} results={results} counts={counts} compareSelected={compareSelected} />
+  );
 }
