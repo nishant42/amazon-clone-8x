@@ -79,6 +79,7 @@ lib/
   data/products.ts            seed catalogue + async access seam
   data/search.ts              async seam: queryProducts(query)
   listing-core.ts             pure: parse params, filter, facet counts, canonical URLs
+  fuzzy-core.ts               pure: Levenshtein typo tolerance (no dependency)
   compare-core.ts             pure: validate/cap selection, toggle links, multipack count
   ai-search-core.ts           pure: prompt, validate model output, text fallback
   ai-search.ts                server-only: the one module that calls the Anthropic API
@@ -132,7 +133,8 @@ Filters are `q`, `category`, `sub`, `price`, `inStock=1`, each holding a comma-s
 `?category=Clothing,Electronics&price=-10,25-50`. **OR within a facet, AND across facets** -
 Clothing or Electronics, and under £10 or £25-£50, and in stock. A price entry is `min-max` in
 pounds with either side open (`-10`, `25-50`, `100-`). `minPrice`/`maxPrice` still parse (the
-custom-range form submits them, and older links use them) and canonicalise into `price`. Comparison selection
+custom-range form submits them, and older links use them) and canonicalise into `price`.
+`exact=1` turns off typo tolerance (decision 8). Comparison selection
 rides on the same query as `compare=id1,id2` (validated against the catalogue, de-duplicated,
 capped at 3) but is never a filter: it does not narrow results or produce a chip, and filter
 links carry it so a selection survives filtering. There is exactly one
@@ -206,6 +208,24 @@ costs one Opus 5 call. The first request after a schema change pays a one-time s
 delay that may exceed 3 s and fall back once.
 *Check:* `grep -rln "@anthropic-ai/sdk" app components lib | grep -v "lib/ai-search.ts"` stays
 empty - one module owns the API, and it imports `server-only`.
+
+**8. Typo tolerance is a fallback, never a rewrite.**
+The strict pass runs first and always ranks above anything fuzzy. Only when it returns fewer
+than `FUZZY_MIN_STRICT` (3) results does `queryProducts` correct the query - one replacement per
+word, the closest vocabulary word by Levenshtein distance (ties to the more common word), never
+every candidate inside the threshold - and append those matches after the exact ones, ranked by
+total edit distance then rating. Thresholds scale with length: under 3 letters no correction,
+3-5 one edit, 6+ two. The page always says what it did ("Showing results for **bluetooth**")
+and links to `exact=1`, which suggests the correction without applying it. Silently rewriting
+someone's query is worse than the typo.
+*Bounds:* no dependency, no index, no cache - the vocabulary (450 words for 120 products) is
+rebuilt per query at ~0.8ms, and that only holds at this catalogue size. Plain Levenshtein
+counts a swapped pair as two edits, so "hoodei" corrects to "hooded" (1) rather than "hoodie"
+(2); Damerau-Levenshtein would fix that and is the obvious upgrade if transposed typos matter.
+Corrections come from the catalogue's own words, so a term the catalogue never uses stays
+uncorrected - "iphne" finds nothing here because there are no iPhones in the seed data.
+*Check:* `grep -rln "fuzzyMatches" lib app | grep -v fuzzy-core` lists only `lib/data/search.ts`
+- one place decides when fuzzy is allowed to run.
 
 ## Caught before shipping
 

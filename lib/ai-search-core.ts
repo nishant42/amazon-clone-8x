@@ -92,6 +92,7 @@ export function validateInterpretation(
     subs: [],
     prices: maxPriceMinor !== undefined ? [{ maxMinor: maxPriceMinor }] : [],
     inStock: raw.inStockOnly === true,
+    exact: false,
     from: sentence,
   };
   // Nothing usable came back (e.g. gibberish): search the sentence as typed so
@@ -141,5 +142,6 @@ export function fallbackQuery(sentence: string, products: Product[], explicitCat
     subs: [],
     prices: [],
     inStock: false,
+    exact: false,
   };
 }

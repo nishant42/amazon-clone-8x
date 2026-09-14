@@ -57,7 +57,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     redirect(pretty ? `/search?${pretty}` : "/search");
   }
 
-  const { results, counts } = await queryProducts(query);
+  const { results, counts, correction } = await queryProducts(query);
   // Only computed when there is nothing to show, to name the filter to drop.
   const blocked = results.length === 0 ? blockingChip(catalogue, query) : undefined;
   const compareSelected = query.compare
@@ -72,6 +72,15 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
       blocking={
         blocked
           ? { label: blocked.chip.label, href: blocked.chip.href, recovered: blocked.recovered }
+          : undefined
+      }
+      correction={
+        correction
+          ? {
+              ...correction,
+              literalHref: listingHref(query, { exact: true }),
+              suggestHref: listingHref(query, { exact: false }),
+            }
           : undefined
       }
     />

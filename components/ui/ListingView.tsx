@@ -13,12 +13,22 @@ export function ListingView({
   counts,
   compareSelected,
   blocking,
+  correction,
 }: {
   query: ListingQuery;
   results: Product[];
   counts: ReturnType<typeof facetCounts>;
   /** When nothing matches: the one filter whose removal brings back the most results. */
   blocking?: { label: string; href: string; recovered: number };
+  /** Set when a typo correction produced (or could produce) the results. */
+  correction?: {
+    original: string;
+    corrected: string;
+    applied: boolean;
+    strictCount: number;
+    literalHref: string;
+    suggestHref: string;
+  };
   /** Pass to enable comparing (on /search). Omitted on home, which is unchanged. */
   compareSelected?: Product[];
 }) {
@@ -48,6 +58,27 @@ export function ListingView({
                 You searched{" "}
                 <span className="font-bold text-amazon-text">&ldquo;{query.from}&rdquo;</span>
                 {chips.length ? " — understood as:" : ""}
+              </p>
+            ) : null}
+
+            {correction ? (
+              <p className="mb-2 text-[14px] text-amazon-text">
+                {correction.applied ? (
+                  <>
+                    {correction.strictCount === 0 ? "Showing results for " : "Also showing close matches for "}
+                    <span className="font-bold italic text-[#C7511F]">{correction.corrected}</span>.{" "}
+                    <Link href={correction.literalHref} className="text-amazon-link hover:text-[#C7511F] hover:underline">
+                      {correction.strictCount === 0 ? "Search instead for" : "Search only for"} &ldquo;{correction.original}&rdquo;
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    Searching for the exact phrase &ldquo;{correction.original}&rdquo;.{" "}
+                    <Link href={correction.suggestHref} className="text-amazon-link hover:text-[#C7511F] hover:underline">
+                      Did you mean <span className="font-bold italic">{correction.corrected}</span>?
+                    </Link>
+                  </>
+                )}
               </p>
             ) : null}
 

@@ -27,11 +27,19 @@ export type ListingQuery = {
   from?: string;
   /** Product ids picked for comparison. Not a filter: never narrows results. */
   compare?: string[];
+  /** exact=1 turns off typo tolerance: search the literal string. */
+  exact: boolean;
 };
 
 export type RawParams = Record<string, string | string[] | undefined>;
 
-export const EMPTY_QUERY: ListingQuery = { categories: [], subs: [], prices: [], inStock: false };
+export const EMPTY_QUERY: ListingQuery = {
+  categories: [],
+  subs: [],
+  prices: [],
+  inStock: false,
+  exact: false,
+};
 
 export const PRICE_BANDS: (PriceRange & { label: string })[] = [
   { label: "Under £10", maxMinor: 1000 },
@@ -169,6 +177,7 @@ export function parseListingParams(params: RawParams): ListingQuery {
     subs,
     prices: sortRanges(prices),
     inStock: first(params.inStock) === "1",
+    exact: first(params.exact) === "1",
     from: first(params.from),
     compare: parseCompareParam(first(params.compare)),
   };
@@ -182,6 +191,7 @@ export function listingSearchParams(query: ListingQuery): URLSearchParams {
   if (query.subs.length) sp.set("sub", query.subs.join(","));
   if (query.prices.length) sp.set("price", sortRanges(query.prices).map(rangeKey).join(","));
   if (query.inStock) sp.set("inStock", "1");
+  if (query.exact) sp.set("exact", "1");
   if (query.compare?.length) sp.set("compare", query.compare.join(","));
   if (query.from) sp.set("from", query.from);
   return sp;
@@ -256,6 +266,11 @@ function passes(product: Product, query: ListingQuery, skip?: Facet): boolean {
 
 export function applyListingQuery(products: Product[], query: ListingQuery): Product[] {
   return products.filter((p) => passes(p, query));
+}
+
+/** Everything except the text match - used to scope the fuzzy fallback to the same facets. */
+export function passesWithoutText(product: Product, query: ListingQuery): boolean {
+  return passes(product, query, "text");
 }
 
 /**

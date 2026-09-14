@@ -46,6 +46,10 @@ _Filled in as features land. Kept factual — nothing listed here unless it runs
   a time, and when nothing matches the page names the filter to blame and offers to drop it.
   Results update in place (median 84ms, no page reload); state is entirely in the URL, so the
   back button and shared links work, and it still works with JavaScript disabled.
+- **Typo tolerance** — "bluetoth" and "hedphones" find products. Fuzzy matching (Levenshtein,
+  no dependency) only runs when the exact pass finds almost nothing, and its hits rank below
+  exact ones. The page says "Showing results for bluetooth" and links to the literal search
+  rather than silently rewriting the query. ~0.8ms per query, no index or cache.
   Text search is tokenised and punctuation-normalised, so `levis` finds `Levi's`.
 - **Basket** (`/cart`) — quantity and remove, subtotal computed server-side from prices
   re-resolved out of the catalogue. Persists in a versioned `httpOnly` cookie that stores
