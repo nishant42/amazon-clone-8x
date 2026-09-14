@@ -5,7 +5,8 @@ const nextConfig = {
     // remote-fetch surface, so it stays on a leash.
     remotePatterns: [
       {
-        // Product photography for most subcategories.
+        // Every non-book product shot. One hand-picked subject per product,
+        // never repeated within a subcategory.
         protocol: "https",
         hostname: "cdn.dummyjson.com",
         pathname: "/product-images/**",
@@ -15,19 +16,6 @@ const nextConfig = {
         protocol: "https",
         hostname: "covers.openlibrary.org",
         pathname: "/b/id/**",
-      },
-      {
-        // Hand-picked images for subcategories dummyjson has no product for
-        // (hoodies, jeans, socks, routers, mops...).
-        protocol: "https",
-        hostname: "thumb.wikimedia.org",
-        pathname: "/wikipedia/commons/**",
-      },
-      {
-        // Labelled placeholder, used only where no reliable photo exists.
-        protocol: "https",
-        hostname: "placehold.co",
-        pathname: "/**",
       },
     ],
   },

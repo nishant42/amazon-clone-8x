@@ -307,6 +307,25 @@ on a £5 book as on a £300 vacuum), and a product must have actually moved over
 any low can be claimed. Distribution went to at-low 24, cheaper-recently 38, steady 58.
 *Check:* the tests print `verdicts:` for all 120 products; at-low should stay well under a third.
 
+**Chasing subcategory accuracy made the catalogue look like a car-boot sale.** An earlier pass
+replaced dummyjson shots with hand-picked Wikimedia photos wherever dummyjson had no matching
+subcategory - jeans, hoodies, socks, routers, mops. Those photos are real, correctly labelled and
+completely wrong for a shop: jeans lying on a carpet, a pile of boxer shorts, lifestyle framing,
+mixed backgrounds. It also collapsed the distinct-image count from 103 to 79, so one white t-shirt
+ended up on three differently-named products. Semantically closer, visually much worse.
+*Fix:* imagery is chosen by `scripts/reimage.py` under three rules, all asserted at generation
+time - one hand-picked subject per product, never the same subject twice inside a subcategory,
+and never more than twice in the whole catalogue - then hill-climbed so two uses of one subject
+sit at least a screenful apart. Every non-book product is a white-background dummyjson shot;
+books keep their real Open Library jackets. `next.config.mjs` dropped the two extra hosts.
+*Bounds:* dummyjson has five men's-shirt subjects and no jeans, hoodies, socks or underwear at
+all, so menswear basics share those five shots and the hoodies fall back to dress shots. A
+plain shirt beside "511 Slim Fit Jeans" reads as a catalogue stand-in; a photo of jeans on
+someone's carpet reads as a bug. The first screenful holds six menswear items against five
+subjects, so exactly one repeat there is arithmetic, not an oversight.
+*Check:* `grep -c "cdn.dummyjson.com" lib/data/products.ts` covers all 100 non-book products,
+and no other image host appears.
+
 ## Deliberately deferred
 
 Accounts, real payments, real inventory, i18n, and a server-side order store (see decision 6

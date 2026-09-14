@@ -56,6 +56,11 @@ _Filled in as features land. Kept factual — nothing listed here unless it runs
   exact ones. The page says "Showing results for bluetooth" and links to the literal search
   rather than silently rewriting the query. ~0.8ms per query, no index or cache.
   Text search is tokenised and punctuation-normalised, so `levis` finds `Levi's`.
+- **Product imagery** — every non-book product is a white-background catalogue shot; books use
+  their real Open Library jackets. Generation asserts that no photograph is reused inside a
+  subcategory and none appears on more than two of the 120 cards, then spreads repeats at least
+  a screenful apart. Where the source has no matching garment (jeans, hoodies, socks), a plain
+  shirt or dress shot stands in rather than a lifestyle photo.
 - **Price history** — every product carries 90 days of daily prices in the seed data. The
   product page shows a sparkline (inline SVG `<polyline>`, no charting library) with today
   marked, plus the 90-day low and high. Next to the discount badge sits a verdict computed from
