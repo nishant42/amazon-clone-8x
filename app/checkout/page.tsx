@@ -21,7 +21,12 @@ export default async function CheckoutPage() {
     <main className="min-h-screen bg-[#E3E6E6]">
       <div className="mx-auto max-w-[1150px] px-3 py-4">
         <h1 className="mb-4 text-[28px] font-medium text-amazon-text">Checkout</h1>
-        <CheckoutForm lines={summary} itemsSubtotalMinor={subtotalMinor} itemCount={itemCount} />
+        <CheckoutForm
+          lines={summary}
+          itemsSubtotalMinor={subtotalMinor}
+          itemCount={itemCount}
+          standardDays={Math.max(...lines.map(({ product }) => product.deliveryDays))}
+        />
       </div>
     </main>
   );

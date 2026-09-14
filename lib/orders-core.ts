@@ -51,6 +51,8 @@ export type Address = {
   line2?: string;
   city: string;
   postcode: string;
+  /** Optional on the type so orders stored before phone was collected still parse. */
+  phone?: string;
 };
 
 export type OrderLine = {
@@ -132,6 +134,7 @@ export type CheckoutInput = {
   line2: string;
   city: string;
   postcode: string;
+  phone: string;
   delivery: string;
   cardName: string;
   cardNumber: string;
@@ -148,11 +151,20 @@ export function validateCheckout(
   const errors: FieldErrors = {};
 
   if (input.name.trim().length < 2) errors.name = "Enter a full name";
+  else if (input.name.trim().length > 60) errors.name = "Name is too long";
   if (input.line1.trim().length < 3) errors.line1 = "Enter a street address";
+  else if (input.line1.trim().length > 100) errors.line1 = "Address line 1 is too long";
+  if (input.line2.trim().length > 100) errors.line2 = "Address line 2 is too long";
   if (input.city.trim().length < 2) errors.city = "Enter a town or city";
+  else if (input.city.trim().length > 50) errors.city = "Town or city is too long";
   if (!input.postcode.trim()) errors.postcode = "Enter a postcode";
   else if (!isValidUkPostcode(input.postcode))
     errors.postcode = "Enter a valid UK postcode, for example SW1A 1AA";
+
+  const phoneDigits = input.phone.replace(/[\s()-]/g, "");
+  if (!input.phone.trim()) errors.phone = "Enter a contact phone number";
+  else if (!/^\+?\d{10,15}$/.test(phoneDigits))
+    errors.phone = "Enter a valid phone number, for example 07700 900123";
 
   const delivery =
     input.delivery === "standard" || input.delivery === "express"
@@ -180,6 +192,7 @@ export function validateCheckout(
       line2: input.line2.trim() || undefined,
       city: input.city.trim(),
       postcode: normalisePostcode(input.postcode),
+      phone: input.phone.trim(),
     },
     delivery,
     last4: cardDigits.slice(-4),
@@ -193,9 +206,17 @@ export function makeOrderId(random: () => number = Math.random): string {
   return `${block(3)}-${block(7)}-${block(7)}`;
 }
 
-export function etaFor(delivery: DeliveryOption, from = new Date()): string {
+/**
+ * Express is next day. Standard uses the slowest deliveryDays in the basket -
+ * the order arrives when its last item does - falling back to the table value.
+ */
+export function etaFor(delivery: DeliveryOption, standardDays?: number, from = new Date()): string {
+  const days =
+    delivery === "standard" && standardDays && standardDays > 0
+      ? standardDays
+      : DELIVERY[delivery].days;
   const date = new Date(from);
-  date.setDate(date.getDate() + DELIVERY[delivery].days);
+  date.setDate(date.getDate() + days);
   return date.toISOString();
 }
 
@@ -205,6 +226,8 @@ export function buildOrder(args: {
   address: Address;
   delivery: DeliveryOption;
   cardLast4: string;
+  /** Slowest deliveryDays across the basket, used for standard delivery. */
+  standardDays?: number;
   now?: Date;
 }): Order {
   const now = args.now ?? new Date();
@@ -223,7 +246,7 @@ export function buildOrder(args: {
     address: args.address,
     delivery: args.delivery,
     cardLast4: args.cardLast4,
-    etaISO: etaFor(args.delivery, now),
+    etaISO: etaFor(args.delivery, args.standardDays, now),
   };
 }
 

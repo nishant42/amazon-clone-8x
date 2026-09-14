@@ -41,6 +41,7 @@ export async function placeOrder(
     line2: field(formData, "line2"),
     city: field(formData, "city"),
     postcode: field(formData, "postcode"),
+    phone: field(formData, "phone"),
     delivery: field(formData, "delivery"),
     cardName: field(formData, "cardName"),
     cardNumber: field(formData, "cardNumber"),
@@ -99,6 +100,7 @@ export async function placeOrder(
     address: result.address,
     delivery: result.delivery,
     cardLast4: result.last4,
+    standardDays: Math.max(...basket.lines.map((l) => l.product.deliveryDays)),
   });
 
   if (!orderFitsInCookie(order)) {

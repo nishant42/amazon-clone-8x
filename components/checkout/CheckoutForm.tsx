@@ -69,10 +69,13 @@ export function CheckoutForm({
   lines,
   itemsSubtotalMinor,
   itemCount,
+  standardDays,
 }: {
   lines: SummaryLine[];
   itemsSubtotalMinor: number;
   itemCount: number;
+  /** Slowest deliveryDays in the basket, shown against standard delivery. */
+  standardDays: number;
 }) {
   const [state, formAction, pending] = useActionState(placeOrder, initialState);
 
@@ -137,6 +140,18 @@ export function CheckoutForm({
               defaultValue={v.postcode}
               hint="UK postcodes only, e.g. SW1A 1AA"
             />
+            <div className="sm:col-span-2">
+              <Field
+                name="phone"
+                label="Phone number"
+                type="tel"
+                autoComplete="tel"
+                inputMode="tel"
+                errors={state.errors}
+                defaultValue={v.phone}
+                hint="Used by the courier if there is a problem with delivery."
+              />
+            </div>
           </div>
         </section>
 
@@ -161,7 +176,11 @@ export function CheckoutForm({
                 />
                 <span className="text-[14px] text-amazon-text">
                   <span className="block font-bold">{DELIVERY[option].label}</span>
-                  <span className="block text-[#565959]">{DELIVERY[option].blurb}</span>
+                  <span className="block text-[#565959]">
+                    {option === "standard"
+                      ? `FREE · arrives in ${standardDays} ${standardDays === 1 ? "day" : "days"}`
+                      : DELIVERY[option].blurb}
+                  </span>
                 </span>
               </label>
             ))}

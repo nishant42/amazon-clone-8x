@@ -80,6 +80,12 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                 {order.address.city}
                 <br />
                 {order.address.postcode}
+                {order.address.phone ? (
+                  <>
+                    <br />
+                    {order.address.phone}
+                  </>
+                ) : null}
               </address>
             </div>
 
