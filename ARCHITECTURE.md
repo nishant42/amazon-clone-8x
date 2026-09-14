@@ -53,19 +53,25 @@ app/
   search/page.tsx             ?q= &category=
   product/[slug]/page.tsx     product detail
   cart/page.tsx               basket
-  orders/page.tsx             placeholder empty state
+  checkout/page.tsx           address, delivery, mock payment
+  orders/page.tsx             order history
+  orders/[id]/page.tsx        order confirmation
   info/[topic]/page.tsx       placeholder behind the secondary nav
   api/health/route.ts
 components/ui/                presentational, props only
   SiteHeader.tsx  ProductCard.tsx  Stars.tsx
 components/product/           client island: gallery + buy box
 components/cart/              client island
+components/checkout/          client island: checkout form
 lib/
   data/products.ts            seed catalogue + async access seam
   data/search.ts              tokenised, punctuation-normalised matching
   basket-core.ts              pure basket rules, no Next imports (testable)
   basket.ts                   cookie read + server-side price resolution
   basket-actions.ts           "use server" mutations
+  orders-core.ts              pure checkout rules: postcode, Luhn, totals, snapshot
+  orders.ts                   orders cookie read
+  checkout-actions.ts         placeOrder server action
   money.ts                    minor-unit formatting
   images.ts                   derived gallery images
 .claude/  .agent-logs/        capture hook + logs (ship with the repo)
@@ -84,13 +90,15 @@ later means migrating fixture data *and* touching every display and arithmetic s
 
 **2. Server Components by default; client islands are named and contained.**
 Pages render on the server and ship no JS for *data*. Interaction islands are confined to
-`components/cart/` and `components/product/` (gallery swap, colour/size/quantity). Reversing
+`components/cart/`, `components/product/` (gallery swap, colour/size/quantity) and
+`components/checkout/` (form state and live delivery total). Reversing
 means rewriting every component's data flow, not just adding a directive.
 *Widened once, deliberately:* this originally said the cart was the only island. Thumbnail
 swapping and variant pickers are genuinely interactive, so `components/product/` was added
-rather than faking interactivity server-side.
+rather than faking interactivity server-side. `components/checkout/` was added for the same
+reason: `useActionState` field errors and a delivery total that updates as you choose.
 *Check:* `grep -rln '^"use client"' app components 2>/dev/null` lists only files under
-`components/cart/` or `components/product/`. (Anchored to line start: unanchored it matches
+`components/cart/`, `components/product/` or `components/checkout/`. (Anchored to line start: unanchored it matches
 the string inside a comment.)
 
 **3. All data access goes through async functions in `lib/data/`.**
@@ -106,7 +114,18 @@ client state means rebuilding navigation and pagination.
 *Check:* search/listing components read `searchParams`; no `useState` holds a query, sort or
 page value.
 
+**5. An order is a snapshot; the basket is not.**
+The basket stores ids and re-resolves prices every render. An order stores the price paid on
+each line and never reads the catalogue again, so a later price change cannot rewrite history.
+Prices are re-resolved once, server-side, at the moment `placeOrder` runs — not taken from the
+summary the customer was looking at. Merging these two models later would mean migrating every
+stored order.
+*Check:* `grep -n "priceMinor" app/orders` stays empty — order pages read `unitPriceMinor`
+from the snapshot, never the catalogue price.
+
 ## Deliberately deferred
 
-Accounts, checkout, payments, real inventory, i18n, and a database. Adding any of these is
+Accounts, real payments, real inventory, i18n, and a database. Orders live in a browser cookie,
+which caps history at the most recent few and one order at about 10 distinct lines; a server
+store is the obvious next step. Adding any of these is
 additive against the seams above — none requires reversing a decision on this page.

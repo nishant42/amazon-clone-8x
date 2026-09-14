@@ -45,7 +45,13 @@ _Filled in as features land. Kept factual — nothing listed here unless it runs
 - **Basket** (`/cart`) — quantity and remove, subtotal computed server-side from prices
   re-resolved out of the catalogue. Persists in a versioned `httpOnly` cookie that stores
   only ids, quantities and variants — never a price.
-- **Placeholders** (`/orders`, `/info/*`) — so every header link lands somewhere real.
+- **Checkout** (`/checkout`) — address with server-side UK postcode validation, standard or
+  express delivery (express adds £4.99), mock card with a Luhn check. Totals are re-resolved from
+  the catalogue at the moment the order is placed.
+- **Orders** (`/orders`, `/orders/[id]`) — a confirmation with order number, items at the price
+  paid, address and estimated arrival. An order is a snapshot of prices paid, so catalogue
+  changes cannot rewrite it.
+- **Placeholders** (`/info/*`) — so every secondary nav link lands somewhere real.
   All 136 internal links on the site return 200.
 - **Agent capture.** Every prompt and final response is logged automatically to
   `.agent-logs/` via Claude Code hooks — see [CAPTURE-TEST.md](CAPTURE-TEST.md).
@@ -56,8 +62,10 @@ _Filled in as features land. Kept factual — nothing listed here unless it runs
 
 _Things that are absent on purpose, not by oversight. Reasons matter more than the list._
 
-- **Checkout, payments and accounts.** The basket is real; nothing beyond it is. `/orders`
-  says so on the page rather than pretending.
+- **Real payments and accounts.** Checkout is real end to end, but the card is mocked (Luhn
+  checked, never stored beyond the last four digits) and there is no sign-in.
+- **A server-side order store.** Orders live in a browser cookie. That keeps the build free of
+  infrastructure but caps history at the most recent few orders.
 - **A filter engine.** The data is shaped for it — every filterable field is a flat
   top-level scalar — but sorting and faceting are not built.
 - **Persistence beyond a cookie.** Deliberate: the basket survives refresh on one device

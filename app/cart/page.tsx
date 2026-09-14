@@ -130,17 +130,12 @@ export default async function CartPage() {
             Subtotal ({itemCount} {itemCount === 1 ? "item" : "items"}):{" "}
             <span className="font-bold">{formatGBP(subtotalMinor)}</span>
           </p>
-          <button
-            type="button"
-            disabled
-            title="Checkout is out of scope for this build"
-            className="mt-3 w-full cursor-not-allowed rounded-[20px] bg-[#e7e9ec] py-2 text-[14px] text-[#565959]"
+          <Link
+            href="/checkout"
+            className="mt-3 block w-full rounded-[20px] bg-amazon-orange py-2 text-center text-[14px] font-medium text-amazon-text hover:brightness-95"
           >
             Proceed to checkout
-          </button>
-          <p className="mt-2 text-[12px] text-[#565959]">
-            Checkout is deliberately out of scope — see README.
-          </p>
+          </Link>
         </aside>
       </div>
     </main>
