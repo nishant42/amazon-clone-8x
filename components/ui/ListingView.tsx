@@ -12,10 +12,13 @@ export function ListingView({
   results,
   counts,
   compareSelected,
+  blocking,
 }: {
   query: ListingQuery;
   results: Product[];
   counts: ReturnType<typeof facetCounts>;
+  /** When nothing matches: the one filter whose removal brings back the most results. */
+  blocking?: { label: string; href: string; recovered: number };
   /** Pass to enable comparing (on /search). Omitted on home, which is unchanged. */
   compareSelected?: Product[];
 }) {
@@ -60,6 +63,7 @@ export function ListingView({
                   <li key={chip.key}>
                     <Link
                       href={chip.href}
+                      scroll={false}
                       aria-label={`Remove filter: ${chip.label}`}
                       className="inline-flex items-center gap-1.5 rounded-full border border-[#007185] bg-[#edfdff] px-3 py-1 text-[13px] text-amazon-text hover:bg-[#d7f5f9]"
                     >
@@ -94,17 +98,44 @@ export function ListingView({
           ) : (
             <div className="mt-4 rounded-[4px] bg-white px-6 py-12 text-center">
               <h1 className="text-[21px] font-bold text-amazon-text">No products match these filters</h1>
-              <p className="mx-auto mt-2 max-w-md text-[14px] text-[#565959]">
-                Remove a filter above, try a wider price range, or check the spelling of your search.
-              </p>
-              <p className="mt-6">
-                <Link
-                  href="/search"
-                  className="inline-block rounded-[20px] bg-amazon-orange px-6 py-2 text-[14px] font-medium text-amazon-text hover:brightness-95"
-                >
-                  Clear all filters
-                </Link>
-              </p>
+              {blocking ? (
+                <>
+                  <p className="mx-auto mt-2 max-w-lg text-[14px] text-amazon-text">
+                    <span className="font-bold">{blocking.label}</span> is the filter ruling everything
+                    out. Without it you get {blocking.recovered}{" "}
+                    {blocking.recovered === 1 ? "result" : "results"}.
+                  </p>
+                  <p className="mt-6 flex flex-wrap justify-center gap-3">
+                    <Link
+                      href={blocking.href}
+                      className="inline-block rounded-[20px] bg-amazon-orange px-6 py-2 text-[14px] font-medium text-amazon-text hover:brightness-95"
+                    >
+                      Remove {blocking.label}
+                    </Link>
+                    <Link
+                      href="/search"
+                      className="inline-block rounded-[20px] border border-[#d5d9d9] px-6 py-2 text-[14px] text-amazon-text hover:border-amazon-link"
+                    >
+                      Clear all filters
+                    </Link>
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="mx-auto mt-2 max-w-md text-[14px] text-[#565959]">
+                    No single filter is to blame - it is the combination. Drop one of the chips above,
+                    or start again.
+                  </p>
+                  <p className="mt-6">
+                    <Link
+                      href="/search"
+                      className="inline-block rounded-[20px] bg-amazon-orange px-6 py-2 text-[14px] font-medium text-amazon-text hover:brightness-95"
+                    >
+                      Clear all filters
+                    </Link>
+                  </p>
+                </>
+              )}
             </div>
           )}
         </div>

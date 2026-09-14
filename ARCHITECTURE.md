@@ -73,6 +73,7 @@ components/ui/                presentational, props only
   CompareToggle.tsx  CompareBar.tsx     compare selection is links, no JS
 components/product/           client island: gallery + buy box
 components/cart/              client island
+components/filters/           client island: filter link (scroll + pending dot)
 components/checkout/          client island: checkout form
 lib/
   data/products.ts            seed catalogue + async access seam
@@ -105,15 +106,16 @@ later means migrating fixture data *and* touching every display and arithmetic s
 
 **2. Server Components by default; client islands are named and contained.**
 Pages render on the server and ship no JS for *data*. Interaction islands are confined to
-`components/cart/`, `components/product/` (gallery swap, colour/size/quantity) and
-`components/checkout/` (form state and live delivery total). Reversing
+`components/cart/`, `components/product/` (gallery swap, colour/size/quantity),
+`components/checkout/` (form state and live delivery total) and `components/filters/`
+(scroll={false} + pending dot on a filter link; no filter state). Reversing
 means rewriting every component's data flow, not just adding a directive.
 *Widened once, deliberately:* this originally said the cart was the only island. Thumbnail
 swapping and variant pickers are genuinely interactive, so `components/product/` was added
 rather than faking interactivity server-side. `components/checkout/` was added for the same
 reason: `useActionState` field errors and a delivery total that updates as you choose.
 *Check:* `grep -rln '^"use client"' app components 2>/dev/null` lists only files under
-`components/cart/`, `components/product/` or `components/checkout/`. (Anchored to line
+`components/cart/`, `components/product/`, `components/checkout/` or `components/filters/`. (Anchored to line
 start: unanchored, it matches the string inside a comment.)
 
 **3. All data access goes through async functions in `lib/data/`.**
@@ -126,7 +128,11 @@ component fetches. Every exported function in `lib/data/` returns a Promise.
 **4. Catalog state (query, sort, page, filters) lives in the URL, not React state.**
 Search results must be linkable, shareable, and server-renderable. Retrofitting URL state onto
 client state means rebuilding navigation and pagination.
-Filters are `q`, `category`, `sub`, `minPrice`, `maxPrice`, `inStock=1`. Comparison selection
+Filters are `q`, `category`, `sub`, `price`, `inStock=1`, each holding a comma-separated list:
+`?category=Clothing,Electronics&price=-10,25-50`. **OR within a facet, AND across facets** -
+Clothing or Electronics, and under £10 or £25-£50, and in stock. A price entry is `min-max` in
+pounds with either side open (`-10`, `25-50`, `100-`). `minPrice`/`maxPrice` still parse (the
+custom-range form submits them, and older links use them) and canonicalise into `price`. Comparison selection
 rides on the same query as `compare=id1,id2` (validated against the catalogue, de-duplicated,
 capped at 3) but is never a filter: it does not narrow results or produce a chip, and filter
 links carry it so a selection survives filtering. There is exactly one
@@ -135,6 +141,11 @@ a subcategory from another category and malformed prices are dropped), and `list
 serialises it with a fixed key order. `/search` redirects any non-canonical URL to that form,
 so two URLs never mean the same result set. Prices travel as whole pounds (`maxPrice=50`) for
 readable links and become pence the moment they are parsed (decision 1).
+Filter clicks navigate rather than reload: `components/filters/FilterLink.tsx` is a client
+island only for `scroll={false}` (so ticking a filter does not jump to the top) and a small
+inline pending dot via `useLinkStatus` - never a spinner over the page. The href stays a plain
+URL, so filtering still works with JavaScript disabled. Measured: median 84ms from click to new
+results, same document throughout, scroll preserved.
 *Check:* `grep -rn "useState" components/ui 2>/dev/null` stays empty — listing, sidebar and
 chips hold no state; every filter is a link or a GET form.
 

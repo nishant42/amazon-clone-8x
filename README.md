@@ -41,8 +41,11 @@ _Filled in as features land. Kept factual — nothing listed here unless it runs
   pickers that drive the basket line, quantity, and an out-of-stock state that disables
   the button rather than hiding it.
 - **Search and filters** (`/search`) — department, subcategory, price bands or a custom range,
-  and in-stock only, with facet counts and removable chips. All server-side and entirely in
-  the URL, so the back button and shared links work, and it works with JavaScript disabled.
+  and in-stock only. Multi-select is OR within a facet and AND across facets. Counts show what
+  each option would return given the other filters, chips above the results remove one filter at
+  a time, and when nothing matches the page names the filter to blame and offers to drop it.
+  Results update in place (median 84ms, no page reload); state is entirely in the URL, so the
+  back button and shared links work, and it still works with JavaScript disabled.
   Text search is tokenised and punctuation-normalised, so `levis` finds `Levi's`.
 - **Basket** (`/cart`) — quantity and remove, subtotal computed server-side from prices
   re-resolved out of the catalogue. Persists in a versioned `httpOnly` cookie that stores

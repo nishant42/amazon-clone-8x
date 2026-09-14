@@ -3,6 +3,7 @@ import { ListingView } from "@/components/ui/ListingView";
 import { cleanSentence } from "@/lib/ai-search-core";
 import { interpretSearch } from "@/lib/ai-search";
 import { validCompareIds } from "@/lib/compare-core";
+import { blockingChip } from "@/lib/listing-core";
 import { getProducts, type Product } from "@/lib/data/products";
 import { queryProducts } from "@/lib/data/search";
 import {
@@ -15,7 +16,7 @@ import {
 
 export async function generateMetadata({ searchParams }: { searchParams: Promise<RawParams> }) {
   const query = parseListingParams(await searchParams);
-  const label = query.q ?? query.sub ?? query.category;
+  const label = query.q ?? query.subs[0] ?? query.categories[0];
   return { title: label ? `${label} | amazon.co.uk clone` : "All products | amazon.co.uk clone" };
 }
 
@@ -57,10 +58,22 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   }
 
   const { results, counts } = await queryProducts(query);
+  // Only computed when there is nothing to show, to name the filter to drop.
+  const blocked = results.length === 0 ? blockingChip(catalogue, query) : undefined;
   const compareSelected = query.compare
     .map((id) => catalogue.find((p) => p.id === id))
     .filter((p): p is Product => Boolean(p));
   return (
-    <ListingView query={query} results={results} counts={counts} compareSelected={compareSelected} />
+    <ListingView
+      query={query}
+      results={results}
+      counts={counts}
+      compareSelected={compareSelected}
+      blocking={
+        blocked
+          ? { label: blocked.chip.label, href: blocked.chip.href, recovered: blocked.recovered }
+          : undefined
+      }
+    />
   );
 }

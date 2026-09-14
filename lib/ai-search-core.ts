@@ -88,14 +88,15 @@ export function validateInterpretation(
 
   const query: ListingQuery = {
     q: tokens.length ? tokens.join(" ") : undefined,
-    category,
-    maxPriceMinor,
+    categories: category ? [category] : [],
+    subs: [],
+    prices: maxPriceMinor !== undefined ? [{ maxMinor: maxPriceMinor }] : [],
     inStock: raw.inStockOnly === true,
     from: sentence,
   };
   // Nothing usable came back (e.g. gibberish): search the sentence as typed so
   // the shopper sees an honest "no results", not the whole catalogue.
-  if (!query.q && !query.category && query.maxPriceMinor === undefined && !query.inStock) {
+  if (!query.q && !query.categories.length && !query.prices.length && !query.inStock) {
     query.q = sentence;
   }
   return query;
@@ -134,5 +135,11 @@ export function fallbackQuery(sentence: string, products: Product[], explicitCat
     .split(" ")
     .filter((word) => word && !FILLER.has(word));
   const tokens = catalogueTokens(words, products, category);
-  return { q: tokens.length ? tokens.join(" ") : sentence, category, inStock: false };
+  return {
+    q: tokens.length ? tokens.join(" ") : sentence,
+    categories: category ? [category] : [],
+    subs: [],
+    prices: [],
+    inStock: false,
+  };
 }
