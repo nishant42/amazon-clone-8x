@@ -3,7 +3,7 @@
 An Amazon storefront clone, built for the 8x assignment.
 
 **Live:** _pending first deploy — filled in below once Vercel is connected_
-**Stack:** Next.js 14 (App Router) · TypeScript · Tailwind CSS 3 · deployed on Vercel
+**Stack:** Next.js 16.3.5 (App Router) · React 19.3.0 · TypeScript · Tailwind CSS 3 · deployed on Vercel
 
 > **Status: scaffold only.** No product features exist yet. The deployment pipeline was
 > proven first, deliberately, so that every feature after this ships to a URL that is
@@ -27,7 +27,7 @@ scope says otherwise.
 
 _Filled in as features land. Kept factual — nothing listed here unless it runs._
 
-- **Project scaffold.** Next.js 14 App Router, TypeScript, Tailwind 3, ESLint.
+- **Project scaffold.** Next.js 16 App Router, React 19, TypeScript, Tailwind 3, ESLint 9.
 - **Theme tokens.** Amazon palette wired into `tailwind.config.ts` as `amazon-*`
   utilities (`amazon-dark`, `amazon-light`, `amazon-orange`, `amazon-link`,
   `amazon-star`, `amazon-badge`, `amazon-text`).
@@ -59,8 +59,21 @@ _Decisions with a real cost, and why the cost was worth paying._
   risked `.claude/`, `.agent-logs/` and `CAPTURE-TEST.md`. Cost: a manual `.gitignore`
   merge. Benefit: the capture log could not be clobbered, and that was verified by
   checksumming those paths before and after the merge.
-- **Next.js 14, not 15.** Pinned because the assignment specifies it. Cost: missing newer
-  App Router improvements.
+- **Next.js 16, upgraded from 14 before any feature was written.** The scaffold was
+  created on Next 14.2.35, which is the newest 14.x but still carries 5 advisories, one of
+  them critical: unauthenticated RCE in the Image Optimization API via AVIF files. This is a
+  storefront, so image optimization is squarely on the critical path — the advisory would
+  have sat under every product image in the build.
+
+  Those fixes exist only in later majors. Next 15.5.25 clears the critical RCE but still
+  audits at 1 moderate (`next`) plus 1 high (`postcss`), and npm reports `fixAvailable:
+  next@16.3.5` for both — so 15 was a partial fix, not a fix. Next 16.3.5 audits completely
+  clean.
+
+  Cost: two majors of breaking changes absorbed at once, and React 19. Paid deliberately
+  while the surface area was a placeholder page and one route handler — the cheapest moment
+  it will ever be. Verified after upgrade: `npm audit` reports 0 vulnerabilities, `npm run
+  lint` and `npm run build` pass, and `/api/health` still returns `{"status":"ok"}`.
 - TBD — add trade-offs as they are made.
 
 ---
