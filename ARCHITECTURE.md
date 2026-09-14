@@ -76,6 +76,8 @@ lib/
   data/products.ts            seed catalogue + async access seam
   data/search.ts              async seam: queryProducts(query)
   listing-core.ts             pure: parse params, filter, facet counts, canonical URLs
+  ai-search-core.ts           pure: prompt, validate model output, text fallback
+  ai-search.ts                server-only: the one module that calls the Anthropic API
   basket-core.ts              pure basket rules, no Next imports (testable)
   basket.ts                   cookie read + server-side price resolution
   basket-actions.ts           "use server" mutations
@@ -170,6 +172,24 @@ and are removed with it. Nothing on the pages changes, because they already cons
 `lib/orders.ts` and `lib/checkout-actions.ts`. If a third file appears, the migration path above
 has grown and this entry needs updating.
 
+**7. The model turns a sentence into filters; it never filters.**
+The header box sends `ask=<sentence>`. `/search` passes it to `interpretSearch`, which asks
+`claude-opus-5` (effort `low`) for exactly `{category, maxPrice, keywords, inStockOnly}` via
+structured outputs. That output is untrusted: `validateInterpretation` drops a department not in
+`CATEGORIES`, a non-positive or absurd price, and any keyword no product contains, then maps the
+rest onto the decision-4 params and redirects there with `from=<sentence>` for display. From that
+point filtering, chips, back button and sharing are exactly the click-filter path, and no link
+carries `ask`, so refining, going back or opening a shared link never calls the model again.
+*Bounds:* 3 s hard timeout with SDK retries off (the SDK retries timeouts by default, which would
+turn 3 s into ~9 s). Any failure - no key, timeout, 4xx/5xx, refusal, truncated or non-JSON
+output - silently redirects to plain text search with no `from`, so the page never claims to have
+understood anything; the reason is logged server-side only. Refusal fallback is enabled
+(`fallbacks: "default"`), though a server-side re-run rarely fits inside 3 s. Every header search
+costs one Opus 5 call. The first request after a schema change pays a one-time schema-compilation
+delay that may exceed 3 s and fall back once.
+*Check:* `grep -rln "@anthropic-ai/sdk" app components lib | grep -v "lib/ai-search.ts"` stays
+empty - one module owns the API, and it imports `server-only`.
+
 ## Caught before shipping
 
 **The order cookie size cap measured the wrong thing.** The first version of `addOrder` capped
@@ -183,6 +203,16 @@ measuring the encoded size in a test before the checkout commit, not by a user.
 and `orderFitsInCookie()` is checked before any write.
 *Check:* `grep -c "JSON.stringify" lib/orders-core.ts` is `1` — the only call is inside
 `encodedSize()`. A second call is a raw-size comparison creeping back in.
+
+**The AI search fallback returned nothing for the demo sentence.** The fallback keeps only words
+that appear somewhere in the catalogue, then requires every word to match. For "cheap running
+shoes under £50", `under` survived (it occurs in "Under Armour" and "underwear") and `50` survived
+inside a product title, so the fallback searched `running shoes under 50` and found zero products -
+a silent empty page, the exact failure the fallback exists to prevent. Found by the pure tests
+before any browser run.
+*Fix:* `fallbackQuery` strips price expressions and a fixed list of search filler words before the
+catalogue check; "under armour hoodie" still finds the hoodie via `armour hoodie`.
+*Check:* the fallback for "cheap running shoes under £50" is `q=running shoes` with results.
 
 ## Deliberately deferred
 

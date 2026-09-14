@@ -37,7 +37,7 @@ export function ListingView({
               <p className="mb-2 text-[13px] text-[#565959]">
                 You searched{" "}
                 <span className="font-bold text-amazon-text">&ldquo;{query.from}&rdquo;</span>
-                {chips.length ? " — understood as:" : " — no filters could be taken from it."}
+                {chips.length ? " — understood as:" : ""}
               </p>
             ) : null}
 

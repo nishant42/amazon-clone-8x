@@ -1,7 +1,14 @@
 import { redirect } from "next/navigation";
 import { ListingView } from "@/components/ui/ListingView";
+import { cleanSentence } from "@/lib/ai-search-core";
+import { interpretSearch } from "@/lib/ai-search";
 import { queryProducts } from "@/lib/data/search";
-import { listingSearchParams, parseListingParams, type RawParams } from "@/lib/listing-core";
+import {
+  listingHref,
+  listingSearchParams,
+  parseListingParams,
+  type RawParams,
+} from "@/lib/listing-core";
 
 export async function generateMetadata({ searchParams }: { searchParams: Promise<RawParams> }) {
   const query = parseListingParams(await searchParams);
@@ -19,6 +26,18 @@ function rawQueryString(params: RawParams): string {
 
 export default async function SearchPage({ searchParams }: { searchParams: Promise<RawParams> }) {
   const raw = await searchParams;
+
+  // A sentence typed into the header. The model turns it into filters, then we
+  // redirect to the ordinary filter URL, so everything after this point - the
+  // filtering, the back button, sharing - is identical to clicking filters.
+  if (raw.ask !== undefined) {
+    const sentence = cleanSentence(Array.isArray(raw.ask) ? raw.ask[0] : raw.ask);
+    if (!sentence) redirect("/search");
+    const dropdown = Array.isArray(raw.category) ? raw.category[0] : raw.category;
+    const { query } = await interpretSearch(sentence, dropdown);
+    redirect(listingHref(query));
+  }
+
   const query = parseListingParams(raw);
 
   // One URL per result set. "category=All", empty inputs, invalid values and

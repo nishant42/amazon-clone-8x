@@ -105,9 +105,12 @@ export function SiteHeader({ basketCount = 0 }: { basketCount?: number }) {
               <label htmlFor="search-input" className="sr-only">
                 Search Amazon.co.uk
               </label>
+              {/* "ask", not "q": a typed sentence is interpreted by /search and
+                  redirected to filter params. Links and chips use "q" directly,
+                  so a shared filtered link never re-triggers the model. */}
               <input
                 id="search-input"
-                name="q"
+                name="ask"
                 type="search"
                 placeholder="Search Amazon.co.uk"
                 className="h-full min-w-0 flex-1 bg-white px-3 text-[15px] text-amazon-text outline-none"

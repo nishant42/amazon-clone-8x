@@ -43,7 +43,11 @@ function Option({
   );
 }
 
-export function FilterSidebar({ query, counts }: { query: ListingQuery; counts: Counts }) {
+export function FilterSidebar({ query: current, counts }: { query: ListingQuery; counts: Counts }) {
+  // Choosing a filter here is the shopper refining by hand, so the "you
+  // searched ..." line from an AI search no longer describes the results.
+  // Removing a chip keeps it; changing a sidebar filter drops it.
+  const query: ListingQuery = { ...current, from: undefined };
   const priceActive = query.minPriceMinor !== undefined || query.maxPriceMinor !== undefined;
 
   return (
@@ -116,7 +120,6 @@ export function FilterSidebar({ query, counts }: { query: ListingQuery; counts: 
           {query.category ? <input type="hidden" name="category" value={query.category} /> : null}
           {query.sub ? <input type="hidden" name="sub" value={query.sub} /> : null}
           {query.inStock ? <input type="hidden" name="inStock" value="1" /> : null}
-          {query.from ? <input type="hidden" name="from" value={query.from} /> : null}
           <label className="sr-only" htmlFor="minPrice">Minimum price in pounds</label>
           <input
             id="minPrice"

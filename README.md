@@ -47,6 +47,12 @@ _Filled in as features land. Kept factual — nothing listed here unless it runs
 - **Basket** (`/cart`) — quantity and remove, subtotal computed server-side from prices
   re-resolved out of the catalogue. Persists in a versioned `httpOnly` cookie that stores
   only ids, quantities and variants — never a price.
+- **Natural-language search** (header box) — "cheap running shoes under £50" is sent to
+  `claude-opus-5`, which returns only `{category, maxPrice, keywords, inStockOnly}`. That is
+  validated against the real catalogue and mapped onto the same URL filters as the sidebar;
+  the filtering itself stays server-side. What it understood appears above the results as
+  removable chips. A 3-second timeout or any API failure silently falls back to plain text
+  search. Needs `ANTHROPIC_API_KEY` (see `.env.example`); without it, search is plain text.
 - **Checkout** (`/checkout`) — address with server-side UK postcode validation, standard or
   express delivery (express adds £4.99), mock card with a Luhn check. Totals are re-resolved from
   the catalogue at the moment the order is placed.
