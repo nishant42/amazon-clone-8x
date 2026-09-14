@@ -14,14 +14,7 @@ import Link from "next/link";
 const hoverBox =
   "rounded-[2px] border border-transparent p-1.5 hover:border-white transition-colors";
 
-// Every entry points at a real page. See app/info/[topic]/page.tsx.
-const navLinks: { label: string; href: string }[] = [
-  { label: "Today's Deals", href: "/info/todays-deals" },
-  { label: "Customer Service", href: "/info/customer-service" },
-  { label: "Registry", href: "/info/registry" },
-  { label: "Gift Cards", href: "/info/gift-cards" },
-  { label: "Sell", href: "/info/sell" },
-];
+
 
 function PinIcon() {
   return (
@@ -164,11 +157,6 @@ export function SiteHeader({ basketCount = 0 }: { basketCount?: number }) {
             <MenuIcon />
             All
           </Link>
-          {navLinks.map((link) => (
-            <Link key={link.href} href={link.href} className={hoverBox}>
-              {link.label}
-            </Link>
-          ))}
         </div>
       </div>
     </header>

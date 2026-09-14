@@ -65,7 +65,6 @@ app/
   checkout/page.tsx           address, delivery, mock payment
   orders/page.tsx             order history
   orders/[id]/page.tsx        order confirmation
-  info/[topic]/page.tsx       placeholder behind the secondary nav
   api/health/route.ts
 components/ui/                presentational, props only
   SiteHeader.tsx  ProductCard.tsx  Stars.tsx

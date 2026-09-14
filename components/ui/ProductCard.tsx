@@ -33,7 +33,7 @@ export function ProductCard({ product }: { product: Product }) {
 
       <div className="mt-1 flex items-center gap-1">
         <Stars rating={product.rating} />
-        <span className="text-[12px] text-amazon-link hover:text-[#C7511F]">
+        <span className="text-[12px] text-[#565959]">
           {product.reviewCount.toLocaleString("en-GB")}
         </span>
       </div>

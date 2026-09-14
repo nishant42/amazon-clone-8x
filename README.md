@@ -51,8 +51,7 @@ _Filled in as features land. Kept factual — nothing listed here unless it runs
 - **Orders** (`/orders`, `/orders/[id]`) — a confirmation with order number, items at the price
   paid, address and estimated arrival. An order is a snapshot of prices paid, so catalogue
   changes cannot rewrite it.
-- **Placeholders** (`/info/*`) — so every secondary nav link lands somewhere real.
-  All 136 internal links on the site return 200.
+  Every internal link on the site returns 200; links to pages that did not exist were deleted rather than stubbed.
 - **Agent capture.** Every prompt and final response is logged automatically to
   `.agent-logs/` via Claude Code hooks — see [CAPTURE-TEST.md](CAPTURE-TEST.md).
 

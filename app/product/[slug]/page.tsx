@@ -57,14 +57,12 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
             <h1 className="text-[24px] font-medium leading-tight text-amazon-text">
               {product.title}
             </h1>
-            <p className="mt-1 text-[14px] text-amazon-link">
-              Visit the {product.brand} Store
-            </p>
+            <p className="mt-1 text-[14px] text-[#565959]">Brand: {product.brand}</p>
 
             <div className="mt-2 flex items-center gap-2">
               <Stars rating={product.rating} />
               <span className="text-[14px] text-amazon-text">{product.rating}</span>
-              <span className="text-[14px] text-amazon-link">
+              <span className="text-[14px] text-[#565959]">
                 {product.reviewCount.toLocaleString("en-GB")} ratings
               </span>
             </div>
