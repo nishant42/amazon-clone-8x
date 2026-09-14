@@ -252,6 +252,22 @@ ordinary links behind. A dropped card adds the default line with no variant, lik
 *Check:* `grep -rn "addProductToBasket" app components lib | grep -v basket-actions.ts` lists
 only the drag island - nothing else uses the quiet add, and the button path keeps `addToBasket`.
 
+**10. Price history is seed data, and the verdict never reads the RRP.**
+Each product carries `priceHistory: number[]` - 90 daily prices in pence, oldest first, with the
+last entry equal to `priceMinor` by construction. It is generated with a per-slug seed
+(`random.Random(crc32(slug))`) rather than the catalogue's shared stream, so adding history left
+every existing rating, stock level and discount byte-identical; the commit was 122 insertions and
+0 deletions to the catalogue. The rules live in `lib/price-history.ts` with no Next imports, so
+"is this actually cheap" is a pure function of the recorded prices.
+*Bounds:* a `-30%` badge is arithmetic against a list price the seller chose, so the verdict
+ignores `wasPriceMinor` entirely. Three outcomes only: at the 90-day low (within 1% of it, and
+only if high - low is itself meaningful), meaningfully cheaper at some point in the window
+(>= 3% and >= £1, most recent qualifying day wins), or steady - which renders nothing at all.
+Fourteen discounted products have histories that contradict their own badge; that is the feature
+working, not a data bug.
+*Check:* `grep -n "wasPriceMinor" lib/price-history.ts` returns nothing. If the verdict ever
+learns about the RRP it is no longer independent of the badge beside it.
+
 ## Caught before shipping
 
 **The order cookie size cap measured the wrong thing.** The first version of `addOrder` capped
@@ -280,6 +296,16 @@ before any browser run.
 *Fix:* `fallbackQuery` strips price expressions and a fixed list of search filler words before the
 catalogue check; "under armour hoodie" still finds the hoodie via `armour hoodie`.
 *Check:* the fallback for "cheap running shoes under £50" is `q=running shoes` with results.
+
+**"Lowest price in 90 days" was going to appear on 70 of 120 cards.** The first at-low rule was
+"within 50p of the 90-day low". Most of the catalogue is flat with penny-level jitter, so today
+sits within 50p of a low that never meaningfully moved - and a claim on 58% of cards carries no
+information. Found by printing the verdict distribution across the whole catalogue in the pure
+tests, not by looking at a page.
+*Fix:* the tolerance scales with price (1%, floored at 10p, capped at 50p, so it means the same
+on a £5 book as on a £300 vacuum), and a product must have actually moved over the window before
+any low can be claimed. Distribution went to at-low 24, cheaper-recently 38, steady 58.
+*Check:* the tests print `verdicts:` for all 120 products; at-low should stay well under a third.
 
 ## Deliberately deferred
 

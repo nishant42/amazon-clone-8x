@@ -56,6 +56,13 @@ _Filled in as features land. Kept factual — nothing listed here unless it runs
   exact ones. The page says "Showing results for bluetooth" and links to the literal search
   rather than silently rewriting the query. ~0.8ms per query, no index or cache.
   Text search is tokenised and punctuation-normalised, so `levis` finds `Levi's`.
+- **Price history** — every product carries 90 days of daily prices in the seed data. The
+  product page shows a sparkline (inline SVG `<polyline>`, no charting library) with today
+  marked, plus the 90-day low and high. Next to the discount badge sits a verdict computed from
+  the real history and never from the RRP: "Lowest price in the last 90 days", or "Was £16.19
+  7 weeks ago" — which is what 14 of the discounted products actually deserve. Search cards get
+  a one-line version only when the product is genuinely at its low (24 of 120), so the line
+  still means something.
 - **Basket** (`/cart`) — quantity and remove, subtotal computed server-side from prices
   re-resolved out of the catalogue. Persists in a versioned `httpOnly` cookie that stores
   only ids, quantities and variants — never a price.

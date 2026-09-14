@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Product } from "@/lib/data/products";
 import { discountPercent, formatGBP, splitGBP } from "@/lib/money";
+import { priceVerdict } from "@/lib/price-history";
 import { Stars } from "./Stars";
 
 export function ProductCard({
@@ -16,6 +17,8 @@ export function ProductCard({
   const off = product.wasPriceMinor
     ? discountPercent(product.priceMinor, product.wasPriceMinor)
     : 0;
+  // Cards say something only when there is something worth saying.
+  const atLow = priceVerdict(product).kind === "at-low";
 
   return (
     <article className="flex flex-col rounded-[4px] bg-white p-3">
@@ -60,6 +63,10 @@ export function ProductCard({
         <p className="mt-0.5 w-fit rounded-sm bg-amazon-badge px-1.5 py-0.5 text-[11px] font-bold text-white">
           -{off}%
         </p>
+      ) : null}
+
+      {atLow ? (
+        <p className="mt-0.5 text-[12px] font-bold text-[#007600]">Lowest price in 90 days</p>
       ) : null}
 
       {product.isPrime ? (

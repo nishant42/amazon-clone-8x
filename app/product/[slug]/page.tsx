@@ -6,6 +6,8 @@ import { Stars } from "@/components/ui/Stars";
 import { getProductBySlug } from "@/lib/data/products";
 import { galleryImages } from "@/lib/images";
 import { discountPercent, formatGBP } from "@/lib/money";
+import { PriceSparkline } from "@/components/product/PriceSparkline";
+import { humaniseDaysAgo, priceVerdict } from "@/lib/price-history";
 
 type Params = { slug: string };
 
@@ -36,6 +38,8 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
   const off = product.wasPriceMinor
     ? discountPercent(product.priceMinor, product.wasPriceMinor)
     : 0;
+  // Read from the recorded history, never from the RRP the badge uses.
+  const verdict = priceVerdict(product);
 
   return (
     <main className="min-h-screen bg-white">
@@ -69,13 +73,23 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
 
             <hr className="my-3 border-[#e7e7e7]" />
 
-            <div className="flex items-baseline gap-2">
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
               {off > 0 ? (
                 <span className="text-[24px] font-medium text-amazon-badge">-{off}%</span>
               ) : null}
               <span className="text-[28px] font-medium text-amazon-text">
                 {formatGBP(product.priceMinor)}
               </span>
+              {/* The honest line, sitting right next to the discount badge. */}
+              {verdict.kind === "at-low" ? (
+                <span className="text-[13px] font-bold text-[#007600]">
+                  Lowest price in the last 90 days
+                </span>
+              ) : verdict.kind === "cheaper-recently" ? (
+                <span className="text-[13px] font-bold text-amazon-badge">
+                  Was {formatGBP(verdict.wasMinor)} {humaniseDaysAgo(verdict.daysAgo)}
+                </span>
+              ) : null}
             </div>
             {product.wasPriceMinor ? (
               <p className="text-[13px] text-[#565959]">
@@ -110,15 +124,18 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
             ) : null}
           </div>
 
-          <PurchasePanel
-            productId={product.id}
-            priceMinor={product.priceMinor}
-            stock={product.stock}
-            deliveryLabel={deliveryLabel(product.deliveryDays)}
-            isPrime={product.isPrime}
-            colours={product.colours}
-            sizes={product.sizes}
-          />
+          <div className="space-y-4">
+            <PurchasePanel
+              productId={product.id}
+              priceMinor={product.priceMinor}
+              stock={product.stock}
+              deliveryLabel={deliveryLabel(product.deliveryDays)}
+              isPrime={product.isPrime}
+              colours={product.colours}
+              sizes={product.sizes}
+            />
+            <PriceSparkline product={product} />
+          </div>
         </div>
 
         <section className="mt-10 max-w-3xl border-t border-[#e7e7e7] pt-6">
