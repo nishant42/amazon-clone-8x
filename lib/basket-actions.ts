@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import {
   BASKET_COOKIE,
   MAX_QTY,
@@ -48,12 +49,29 @@ export async function addToBasket(formData: FormData) {
   const incoming = readLine(formData);
   if (!incoming) return;
   await save(applyAdd(await load(), incoming));
+  // Without this the page looks unchanged after clicking - the only visible
+  // effect was a small digit in the header - so the add read as broken even
+  // though it had worked. amazon.co.uk goes to the basket too.
+  redirect("/cart");
 }
 
 export async function setLineQty(formData: FormData) {
   const key = String(formData.get("key") ?? "");
   if (!key) return;
   await save(applySetQty(await load(), key, Number(formData.get("qty") ?? 0)));
+}
+
+/**
+ * Same mutation, called directly rather than through a form.
+ *
+ * React 19 resets a form once its action resolves, which snapped the quantity
+ * <select> back to its first option ("0 (Delete)") and left the control
+ * disagreeing with the subtotal. Calling the action from a transition avoids
+ * the form lifecycle entirely.
+ */
+export async function setLineQtyValue(key: string, qty: number) {
+  if (!key) return;
+  await save(applySetQty(await load(), key, qty));
 }
 
 export async function removeLine(formData: FormData) {

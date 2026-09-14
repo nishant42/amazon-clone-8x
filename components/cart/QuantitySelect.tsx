@@ -1,12 +1,17 @@
 "use client";
 
-import { useRef } from "react";
-import { setLineQty } from "@/lib/basket-actions";
+import { useState, useTransition } from "react";
+import { setLineQtyValue } from "@/lib/basket-actions";
 
 /**
  * Client island: submits the form as soon as the quantity changes, so the
  * server recomputes the subtotal without a separate "update" button. The
  * quantity itself is still applied server-side by the action.
+ *
+ * Not wrapped in a <form>: React 19 resets a form after its action resolves,
+ * which snapped this select back to its first option ("0 (Delete)") while the
+ * subtotal showed the correct new total. A working update looked broken. The
+ * action is called from a transition instead, and the value is controlled.
  */
 export function QuantitySelect({
   itemKey,
@@ -17,21 +22,37 @@ export function QuantitySelect({
   qty: number;
   max: number;
 }) {
-  const formRef = useRef<HTMLFormElement>(null);
+  const [value, setValue] = useState(qty);
+  const [syncedQty, setSyncedQty] = useState(qty);
+  const [pending, startTransition] = useTransition();
   const ceiling = Math.max(max, qty);
 
+  // Re-sync when the server reports a new quantity for this line. Adjusting
+  // state during render is React's documented pattern; an effect would trigger
+  // a cascading render and the compiler rejects it.
+  if (syncedQty !== qty) {
+    setSyncedQty(qty);
+    setValue(qty);
+  }
+
   return (
-    <form ref={formRef} action={setLineQty} className="inline-block">
-      <input type="hidden" name="key" value={itemKey} />
+    <>
       <label className="sr-only" htmlFor={`qty-${itemKey}`}>
         Quantity
       </label>
       <select
         id={`qty-${itemKey}`}
         name="qty"
-        defaultValue={qty}
-        onChange={() => formRef.current?.requestSubmit()}
-        className="rounded-[8px] border border-[#d5d9d9] bg-[#f0f2f2] px-2 py-1 text-[13px] shadow-sm"
+        value={value}
+        disabled={pending}
+        onChange={(event) => {
+          const next = Number(event.target.value);
+          setValue(next);
+          startTransition(async () => {
+            await setLineQtyValue(itemKey, next);
+          });
+        }}
+        className="rounded-[8px] border border-[#d5d9d9] bg-[#f0f2f2] px-2 py-1 text-[13px] shadow-sm disabled:opacity-60"
       >
         <option value={0}>0 (Delete)</option>
         {Array.from({ length: ceiling }, (_, i) => i + 1).map((n) => (
@@ -40,11 +61,6 @@ export function QuantitySelect({
           </option>
         ))}
       </select>
-      <noscript>
-        <button type="submit" className="ml-1 text-[12px] text-amazon-link underline">
-          Update
-        </button>
-      </noscript>
-    </form>
+    </>
   );
 }
