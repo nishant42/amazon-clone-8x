@@ -237,6 +237,22 @@ I have left this as-is rather than inventing a synthetic prompt entry for it. A 
 know that **`!` commands do not appear in these logs**, and that a repeated `num=` is the
 signature of one having been used.
 
+**8. Missing RESPONSE entries, and the fix.**
+`Stop` only fires when a turn ends normally. Interrupt a turn, send a message mid-turn, or have
+the session reconnect (which happened twice when the account was re-read) and no RESPONSE is
+written - six turns in the long session were affected. Prompts were never lost, because those
+are captured on submit.
+
+*Fix:* `UserPromptSubmit` now calls `backfill_missing_response` first. If the newest entry is a
+PROMPT with no RESPONSE, the previous turn's final assistant message is read from the transcript
+and appended, tagged `[recovered on the next prompt: ...]` so a late entry is never passed off as
+a live one. Still append-only - nothing already written is edited. Verified with a simulated
+interrupted turn: the response is recovered in order, tagged, not duplicated, counters stay
+correct, and an already-answered prompt produces no bogus entry.
+
+*Limit:* a turn that was interrupted before producing any visible answer has nothing to recover,
+and still shows a PROMPT with no RESPONSE. That is accurate rather than a gap.
+
 ### 4.4 — The one known limitation, stated plainly
 
 **The first `PROMPT` entry of every session records `model: unknown-at-prompt-time`.**

@@ -314,6 +314,48 @@ def append_entry(session_id, kind, text, model, timestamp):
     return path
 
 
+def backfill_missing_response(session_id, transcript, timestamp):
+    """Append a RESPONSE the Stop hook never wrote.
+
+    Stop only fires when a turn ends normally. If the turn is interrupted, a new
+    message arrives mid-turn, or the session reconnects, no RESPONSE is written
+    and the prompt sits in the log unanswered - six turns in the first long
+    session. This runs at the start of the next prompt: if the newest entry is a
+    PROMPT with no RESPONSE, the previous turn's final assistant message is read
+    from the transcript and appended, tagged so it is clear it arrived late.
+
+    Append-only: nothing already written is edited or removed.
+    """
+    path = session_log_path(session_id)
+    if not os.path.exists(path):
+        return
+    with open(path, "r") as handle:
+        body = handle.read()
+
+    found = ENTRY_RE.findall(body)
+    if not found:
+        return
+    prompts = [int(n) for kind, n in found if kind == "PROMPT"]
+    responses = [int(n) for kind, n in found if kind == "RESPONSE"]
+    if not prompts:
+        return
+    latest = max(prompts)
+    if latest in responses:
+        return  # Stop already wrote it
+
+    text = final_text_from_transcript(transcript)
+    if not text.strip():
+        return  # the turn produced no visible answer; nothing to recover
+
+    model = model_from_transcript(transcript) or MODEL_UNKNOWN
+    note = (
+        "[recovered on the next prompt: this turn ended without a Stop event "
+        "(interrupted, superseded, or the session reconnected), so the hook "
+        "could not write it at the time]\n\n"
+    )
+    append_entry(session_id, "RESPONSE", note + text, model, timestamp)
+
+
 def with_lock(func):
     """Serialise writes so two hooks firing at once cannot interleave.
 
@@ -361,6 +403,8 @@ def main():
         if text is None or not str(text).strip():
             return
         model = model_from_transcript(transcript) or MODEL_UNKNOWN_AT_PROMPT
+        # Recover the previous turn's response first, if it never landed.
+        with_lock(lambda: backfill_missing_response(session_id, transcript, timestamp))
         with_lock(lambda: append_entry(session_id, "PROMPT", str(text), model, timestamp))
 
     elif event == "Stop":
