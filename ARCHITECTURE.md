@@ -22,7 +22,8 @@ type Product = {
   currency: "GBP";
   rating: number;            // 3.4–4.8, one decimal
   reviewCount: number;
-  image: string;
+  image: string;            // primary, used on cards (= images[0])
+  images: string[];         // gallery, 1-4, all the same subject
   isPrime: boolean;
   deliveryDays: number;
   stock: number;             // 0 means out of stock
