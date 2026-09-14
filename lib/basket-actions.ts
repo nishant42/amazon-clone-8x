@@ -4,13 +4,19 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import {
   BASKET_COOKIE,
-  BASKET_VERSION,
   MAX_QTY,
-  lineKey,
+  applyAdd,
+  applyRemove,
+  applySetQty,
   parseBasket,
   type Basket,
   type BasketLine,
-} from "@/lib/basket";
+} from "@/lib/basket-core";
+
+async function load(): Promise<Basket> {
+  const store = await cookies();
+  return parseBasket(store.get(BASKET_COOKIE)?.value);
+}
 
 async function save(basket: Basket) {
   const store = await cookies();
@@ -22,11 +28,6 @@ async function save(basket: Basket) {
   });
   // The header shows a basket count, so the layout has to re-render too.
   revalidatePath("/", "layout");
-}
-
-async function current(): Promise<Basket> {
-  const store = await cookies();
-  return parseBasket(store.get(BASKET_COOKIE)?.value);
 }
 
 function readLine(formData: FormData): BasketLine | null {
@@ -46,40 +47,17 @@ function readLine(formData: FormData): BasketLine | null {
 export async function addToBasket(formData: FormData) {
   const incoming = readLine(formData);
   if (!incoming) return;
-
-  const basket = await current();
-  const key = lineKey(incoming);
-  const existing = basket.lines.find((l) => lineKey(l) === key);
-
-  if (existing) {
-    existing.qty = Math.min(existing.qty + incoming.qty, MAX_QTY);
-  } else {
-    basket.lines.push(incoming);
-  }
-  await save({ v: BASKET_VERSION, lines: basket.lines });
+  await save(applyAdd(await load(), incoming));
 }
 
 export async function setLineQty(formData: FormData) {
   const key = String(formData.get("key") ?? "");
-  const qty = Number(formData.get("qty") ?? 0);
   if (!key) return;
-
-  const basket = await current();
-  const lines =
-    Number.isInteger(qty) && qty > 0
-      ? basket.lines.map((l) =>
-          lineKey(l) === key ? { ...l, qty: Math.min(qty, MAX_QTY) } : l,
-        )
-      : basket.lines.filter((l) => lineKey(l) !== key); // qty 0 removes the line
-  await save({ v: BASKET_VERSION, lines });
+  await save(applySetQty(await load(), key, Number(formData.get("qty") ?? 0)));
 }
 
 export async function removeLine(formData: FormData) {
   const key = String(formData.get("key") ?? "");
   if (!key) return;
-  const basket = await current();
-  await save({
-    v: BASKET_VERSION,
-    lines: basket.lines.filter((l) => lineKey(l) !== key),
-  });
+  await save(applyRemove(await load(), key));
 }
