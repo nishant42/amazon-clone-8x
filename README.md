@@ -40,8 +40,10 @@ _Filled in as features land. Kept factual — nothing listed here unless it runs
 - **Product detail** (`/product/[slug]`) — gallery with thumbnail swap, colour/size
   pickers that drive the basket line, quantity, and an out-of-stock state that disables
   the button rather than hiding it.
-- **Search** (`/search?q=`) — matches title, brand, category and subcategory. Tokenised
-  and punctuation-normalised, so `levis` finds `Levi's`. Empty results get a real state.
+- **Search and filters** (`/search`) — department, subcategory, price bands or a custom range,
+  and in-stock only, with facet counts and removable chips. All server-side and entirely in
+  the URL, so the back button and shared links work, and it works with JavaScript disabled.
+  Text search is tokenised and punctuation-normalised, so `levis` finds `Levi's`.
 - **Basket** (`/cart`) — quantity and remove, subtotal computed server-side from prices
   re-resolved out of the catalogue. Persists in a versioned `httpOnly` cookie that stores
   only ids, quantities and variants — never a price.
@@ -65,8 +67,8 @@ _Things that are absent on purpose, not by oversight. Reasons matter more than t
   checked, never stored beyond the last four digits) and there is no sign-in.
 - **A server-side order store.** Orders live in a browser cookie. That keeps the build free of
   infrastructure but caps history at the most recent few orders.
-- **A filter engine.** The data is shaped for it — every filterable field is a flat
-  top-level scalar — but sorting and faceting are not built.
+- **Sorting and pagination.** Filtering is built; results are not yet sortable or paged (the
+  catalogue is 120 products).
 - **Persistence beyond a cookie.** Deliberate: the basket survives refresh on one device
   and nothing more.
 

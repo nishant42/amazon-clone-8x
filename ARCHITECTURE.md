@@ -58,8 +58,8 @@ on every render, so a stale or tampered cookie can never set a price.
 ```
 app/
   layout.tsx                  renders SiteHeader
-  page.tsx                    product grid
-  search/page.tsx             ?q= &category=
+  page.tsx                    unfiltered listing (same view as /search)
+  search/page.tsx             filtered listing; redirects to canonical URL
   product/[slug]/page.tsx     product detail
   cart/page.tsx               basket
   checkout/page.tsx           address, delivery, mock payment
@@ -68,12 +68,14 @@ app/
   api/health/route.ts
 components/ui/                presentational, props only
   SiteHeader.tsx  ProductCard.tsx  Stars.tsx
+  ListingView.tsx  FilterSidebar.tsx   filters are links + one GET form, no JS
 components/product/           client island: gallery + buy box
 components/cart/              client island
 components/checkout/          client island: checkout form
 lib/
   data/products.ts            seed catalogue + async access seam
-  data/search.ts              tokenised, punctuation-normalised matching
+  data/search.ts              async seam: queryProducts(query)
+  listing-core.ts             pure: parse params, filter, facet counts, canonical URLs
   basket-core.ts              pure basket rules, no Next imports (testable)
   basket.ts                   cookie read + server-side price resolution
   basket-actions.ts           "use server" mutations
@@ -119,8 +121,14 @@ component fetches. Every exported function in `lib/data/` returns a Promise.
 **4. Catalog state (query, sort, page, filters) lives in the URL, not React state.**
 Search results must be linkable, shareable, and server-renderable. Retrofitting URL state onto
 client state means rebuilding navigation and pagination.
-*Check:* search/listing components read `searchParams`; no `useState` holds a query, sort or
-page value.
+Filters are `q`, `category`, `sub`, `minPrice`, `maxPrice`, `inStock=1`. There is exactly one
+encoding: `parseListingParams` turns untrusted params into a valid query (unknown categories,
+a subcategory from another category and malformed prices are dropped), and `listingHref`
+serialises it with a fixed key order. `/search` redirects any non-canonical URL to that form,
+so two URLs never mean the same result set. Prices travel as whole pounds (`maxPrice=50`) for
+readable links and become pence the moment they are parsed (decision 1).
+*Check:* `grep -rn "useState" components/ui 2>/dev/null` stays empty — listing, sidebar and
+chips hold no state; every filter is a link or a GET form.
 
 **5. An order is a snapshot; the basket is not.**
 The basket stores ids and re-resolves prices every render. An order stores the price paid on
