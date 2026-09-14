@@ -2,12 +2,14 @@
 
 An Amazon storefront clone, built for the 8x assignment.
 
-**Live:** _pending first deploy — filled in below once Vercel is connected_
+**Live:** https://amazon-clone-8x.vercel.app · health: [`/api/health`](https://amazon-clone-8x.vercel.app/api/health)
 **Stack:** Next.js 16.3.5 (App Router) · React 19.3.0 · TypeScript · Tailwind CSS 3 · deployed on Vercel
 
 > **Status: scaffold only.** No product features exist yet. The deployment pipeline was
 > proven first, deliberately, so that every feature after this ships to a URL that is
-> already known to work.
+> already known to work. Verified on the live deployment: `/api/health` returns
+> `{"status":"ok"}` and is served dynamically (`x-vercel-cache: MISS`, no prerender), and
+> all seven `amazon-*` tokens are present in the deployed CSS.
 
 ---
 
