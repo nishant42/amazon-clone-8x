@@ -2,8 +2,9 @@
 
 A reference to check work against. If the code and this file disagree, one of them is a bug.
 
-**Assumed scope** (not yet confirmed): a storefront — browse, search, product detail, cart.
-No accounts, no checkout, no payments. Everything below is sized for that and no more.
+**Scope:** a storefront — browse, search, product detail, basket, checkout and order history.
+No accounts, no real payments (the card is mocked), no server-side storage. Everything below is
+sized for that and no more.
 
 ## Data shape
 
@@ -33,8 +34,16 @@ type Product = {
   bullets: string[];
 };
 
-type CartLine = { productId: string; qty: number };   // ids and quantities ONLY
-type Cart = { lines: CartLine[] };
+type BasketLine = { productId: string; qty: number; colour?: string; size?: string };
+type Basket = { v: 1; lines: BasketLine[] };        // ids, quantities, variants ONLY
+
+type OrderLine = { productId: string; title: string; image: string; qty: number;
+                   unitPriceMinor: number;           // price PAID, frozen at placement
+                   colour?: string; size?: string };
+type Order = { id: string; placedAt: string; lines: OrderLine[];
+               itemsSubtotalMinor: number; deliveryMinor: number; totalMinor: number;
+               address: Address; delivery: "standard" | "express";
+               cardLast4: string; etaISO: string };
 ```
 
 Every field a filter predicates on — `category`, `brand`, `priceMinor`, `rating`,
@@ -73,7 +82,7 @@ lib/
   orders.ts                   orders cookie read
   checkout-actions.ts         placeOrder server action
   money.ts                    minor-unit formatting
-  images.ts                   derived gallery images
+  images.ts                   gallery image accessor
 .claude/  .agent-logs/        capture hook + logs (ship with the repo)
 ```
 
@@ -98,8 +107,8 @@ swapping and variant pickers are genuinely interactive, so `components/product/`
 rather than faking interactivity server-side. `components/checkout/` was added for the same
 reason: `useActionState` field errors and a delivery total that updates as you choose.
 *Check:* `grep -rln '^"use client"' app components 2>/dev/null` lists only files under
-`components/cart/`, `components/product/` or `components/checkout/`. (Anchored to line start: unanchored it matches
-the string inside a comment.)
+`components/cart/`, `components/product/` or `components/checkout/`. (Anchored to line
+start: unanchored, it matches the string inside a comment.)
 
 **3. All data access goes through async functions in `lib/data/`.**
 They hold the seed catalogue today and can read a database or API later with no call-site changes —
@@ -123,9 +132,53 @@ stored order.
 *Check:* `grep -n "priceMinor" app/orders` stays empty — order pages read `unitPriceMinor`
 from the snapshot, never the catalogue price.
 
+**6. Orders live in a browser cookie, and the bounds are accepted, not accidental.**
+*Why a cookie:* this build has no server-side storage, and adding a database or KV store only
+to hold demo orders would be infrastructure out of proportion to the scope. The cookie is
+`httpOnly`, versioned (`v: 1`) and defensively parsed, like the basket, so a stale or tampered
+value yields an empty history instead of a crash.
+*What it costs:* browsers cap a cookie at ~4096 bytes, and the value is URL-encoded on the wire.
+Against a 3800-byte encoded budget, measured:
+
+| Order size | Encoded | History kept |
+|---|---|---|
+| 1 line | 843 B | 4 orders |
+| 2 lines | 1158 B | 3 orders |
+| 3 lines | 1473 B | 2 orders |
+
+So in practice **the most recent 2–3 orders**, never more than `MAX_ORDERS = 5`, and **one
+order can hold at most 10 distinct lines**. Orders are per-browser: clearing cookies or
+switching device loses them. Older orders are evicted newest-first to make room; an order too
+large to store is refused *before* anything is written or the basket is cleared, with a message
+to the customer. `/orders` states the limit on the page.
+*Migration path if it ever needs to grow:* storage is touched in exactly two places — the read
+in `lib/orders.ts` and the write in `placeOrder` in `lib/checkout-actions.ts`. `orders-core.ts`
+(validation, totals, the `Order` snapshot shape) has no storage dependency and does not change.
+To move to a server store: give each browser an anonymous customer id in a cookie; swap those
+two touchpoints for reads/writes keyed by that id; on first read, import any orders still in
+the legacy `orders` cookie through `parseOrders` and then delete it. The size caps
+(`MAX_ORDERS`, `MAX_COOKIE_VALUE_BYTES`, `orderFitsInCookie`) exist only because of the cookie
+and are removed with it. Nothing on the pages changes, because they already consume `Order`.
+*Check:* `grep -rn "ORDERS_COOKIE" lib app 2>/dev/null | grep -v orders-core` lists only
+`lib/orders.ts` and `lib/checkout-actions.ts`. If a third file appears, the migration path above
+has grown and this entry needs updating.
+
+## Caught before shipping
+
+**The order cookie size cap measured the wrong thing.** The first version of `addOrder` capped
+history by `JSON.stringify(...).length <= 3500`. But cookie values are URL-encoded when set —
+every `"` becomes `%22` and so on — which inflates a real order about 1.52×. An 11-line order is
+2681 B as raw JSON, comfortably under the old cap, and 3995 B once encoded, over the budget. The
+browser would have silently declined to store it: `placeOrder` would have cleared the basket and
+redirected to `/orders/[id]`, and that page would have 404ed, with no error anywhere. Found by
+measuring the encoded size in a test before the checkout commit, not by a user.
+*Fix:* every size limit goes through `encodedSize()` (`encodeURIComponent(JSON.stringify(v))`),
+and `orderFitsInCookie()` is checked before any write.
+*Check:* `grep -c "JSON.stringify" lib/orders-core.ts` is `1` — the only call is inside
+`encodedSize()`. A second call is a raw-size comparison creeping back in.
+
 ## Deliberately deferred
 
-Accounts, real payments, real inventory, i18n, and a database. Orders live in a browser cookie,
-which caps history at the most recent few and one order at about 10 distinct lines; a server
-store is the obvious next step. Adding any of these is
-additive against the seams above — none requires reversing a decision on this page.
+Accounts, real payments, real inventory, i18n, and a server-side order store (see decision 6
+for why and how it would be added). Each is additive against the seams above — none requires
+reversing a decision on this page.
